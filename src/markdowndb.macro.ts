@@ -31,13 +31,12 @@ function mdToHtml(md: string): string {
     breaks: true,
     linkify: true,
   });
-
   return rmd.render(md);
 }
 
 const markdowndbMacros: MacroHandler = ({references, state, babel}) => {
   references.default.forEach(referencePath => {
-    if (referencePath.parentPath.type == "CallExpression") {
+    if (referencePath.parentPath.type == "CallExpression") {    // expand function call only.
       requiremarkdowndb({referencePath, state, babel});
     } else {
       throw new Error(`This is not supported ${referencePath.findParent(babel.types.isExpression).getSource()}`);
@@ -45,19 +44,36 @@ const markdowndbMacros: MacroHandler = ({references, state, babel}) => {
   });
 };
 
+// db will represented as json string.
 const requiremarkdowndb = ({referencePath, state, babel}: Omit<MacroParams, 'references'> & {referencePath: NodePath<Node>}) => {
   const filename = state.file.opts.filename;
   const t = babel.types;
   const callExpressionPath = referencePath;
+  if (typeof (filename) != "string") {
+    throw new Error(`filename ${filename} doesn't exist`);
+  }
   const dirname = path.dirname(filename);
-  let markdownDir: string = callExpressionPath.get("arguments")[0].evaluate().value;
+  const markdownDir: string | undefined =
+    (callExpressionPath.get("arguments") as Array<NodePath<Node>>)[0]
+      .evaluate()
+      .value;
+
+  if (markdownDir === undefined) {
+    throw new Error(`There is a problem evaluating the argument ${callExpressionPath.getSource()}.` +
+      ` Please make sure the value is known at compile time`);
+  }
+
+  const fullDirPath = require.resolve(markdownDir, {paths: [dirname]});
+  const content = JSON.stringify(makeMarkdownDB(fullDirPath));
+  referencePath.parentPath.replaceWith(t.expressionStatement(t.stringLiteral(content)));
 };
+
 
 function makeMarkdownDB(dirname: string): Array<Markdown> {
   return fs.readdirSync(dirname)
     .map(filename => path.resolve(dirname, filename))
     .map((filename, idx) => parseMarkdown(filename, idx))
-    .filter(e => e != undefined);
+    .filter(e => e !== undefined) as Array<Markdown>;
 }
 
 function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
@@ -99,7 +115,8 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
           if (tokens.length == 2)
             title = tokens[1];
           else {
-            title = /(.+).md/.exec(filename)[0];
+            const parsed = /(.+).md/.exec(filename);
+            title = parsed ? parsed[0] : "untitled";
           }
         } catch (err) {
           throw Error(`title of ${filename} is unavaiable`);
@@ -107,8 +124,7 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
         break
     }
   }
-
-  return {header: {title, tag, source, time, id}, content};
+  return {header: {title: (title as string), tag, source, time: (time as Date), id}, content};
 }
 
 
