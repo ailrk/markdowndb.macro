@@ -10,7 +10,7 @@ import {NodePath, Node} from '@babel/core';
 // -- source <src1> <src2> ...
 // -- title <title>
 
-export interface MarkdownHeader {
+interface MarkdownHeader {
   title: string,
   time: Date,
   tag?: Array<string>,
@@ -34,7 +34,7 @@ function mdToHtml(md: string): string {
   return rmd.render(md);
 }
 
-const markdowndbMacros: MacroHandler = ({references, state, babel}) => {
+const markdowndbMacro: MacroHandler = ({references, state, babel}) => {
   references.default.forEach(referencePath => {
     if (referencePath.parentPath.type == "CallExpression") {    // expand function call only.
       requiremarkdowndb({referencePath, state, babel});
@@ -128,4 +128,4 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
 }
 
 
-export default createMacro(markdowndbMacros);
+export default createMacro(markdowndbMacro);

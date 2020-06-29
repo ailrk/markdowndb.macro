@@ -1,2 +1,3 @@
-import macro from './markdowndb.macro';
+import macro from './macro';
+
 export default macro;

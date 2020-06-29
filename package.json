@@ -1,14 +1,18 @@
 {
   "name": "markdowndb.macro",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": " compile time markdown database for static blogs",
+  "main": "dist/markdowndb.macro.js",
+  "source": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "test": "jest --coverage",
+    "build": "microbundle"
   },
+  "files": [
+    "src/index.ts"
+  ],
   "keywords": [],
-  "author": "",
+  "author": "Jummy",
   "license": "ISC",
   "devDependencies": {
     "@types/babel-plugin-macros": "^2.8.2",
@@ -18,6 +22,7 @@
   },
   "dependencies": {
     "@types/markdown-it": "^10.0.1",
-    "markdown-it": "^11.0.0"
+    "markdown-it": "^11.0.0",
+    "microbundle": "^0.12.2"
   }
 }
