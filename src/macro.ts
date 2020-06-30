@@ -3,6 +3,8 @@ import path from 'path';
 import MardownIt from 'markdown-it';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
+import * as babelcore from '@babel/core';
+import {ExpressionStatement, ObjectExpression, ArrayExpression} from '@babel/types';
 
 export default createMacro(markdowndbMacros);
 
@@ -64,10 +66,34 @@ const requiremarkdowndb = ({referencePath, state, babel}: Omit<MacroParams, 'ref
       ` Please make sure the value is known at compile time`);
   }
 
-  const content = JSON.stringify(makeMarkdownDB(path.resolve(markdownDir)));
-  referencePath.parentPath.replaceWith(t.expressionStatement(t.stringLiteral(content)));
+  const content = buildMarkdownArrayAST(makeMarkdownDB(path.resolve(markdownDir)));
+  referencePath.parentPath.replaceWith(content);
+
 };
 
+function buildMarkdownArrayAST(markdowns: Array<Markdown>): ArrayExpression {
+  const t = babelcore.types;
+  return t.arrayExpression(markdowns.map(m => buildMarkdownObjAST(m)));
+}
+
+function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
+  const t = babelcore.types;
+  const markdownExpr = t.objectExpression([
+    t.objectProperty(
+      t.identifier("header"),
+      t.objectExpression([
+        t.objectProperty(t.identifier("title"), t.stringLiteral(markdown.header.title)),
+        t.objectProperty(t.identifier("tag"), t.arrayExpression(markdown.header.tag?.map(e => t.stringLiteral(e)))),
+        t.objectProperty(t.identifier("source"), t.arrayExpression(markdown.header.source?.map(e => t.stringLiteral(e)))),
+        t.objectProperty(t.identifier("time"),
+          t.newExpression(t.identifier("Date"), [t.stringLiteral(markdown.header.time.toJSON())])),
+      ])),
+    t.objectProperty(
+      t.identifier("content"), t.stringLiteral(markdown.content),
+    )
+  ]);
+  return markdownExpr;
+}
 
 function makeMarkdownDB(dirname: string): Array<Markdown> {
   return fs.readdirSync(dirname)
