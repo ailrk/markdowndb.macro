@@ -12,7 +12,7 @@ export default createMacro(markdowndbMacros);
 // -- source <src1> <src2> ...
 // -- title <title>
 
-interface MarkdownHeader {
+export interface MarkdownHeader {
   title: string,
   time: Date,
   tag?: Array<string>,
@@ -20,9 +20,9 @@ interface MarkdownHeader {
   id: number,
 };
 
-type MarkdownText = string;
+export type MarkdownText = string;
 
-type Markdown = {
+export type Markdown = {
   header: MarkdownHeader,
   content: MarkdownText,
 };
