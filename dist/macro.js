@@ -34,11 +34,10 @@ var requiremarkdowndb = function (_a) {
     var referencePath = _a.referencePath, state = _a.state, babel = _a.babel;
     var filename = state.file.opts.filename;
     var t = babel.types;
-    var callExpressionPath = referencePath;
+    var callExpressionPath = referencePath.parentPath;
     if (typeof (filename) != "string") {
         throw new Error("filename " + filename + " doesn't exist");
     }
-    var dirname = path_1.default.dirname(filename);
     var markdownDir = callExpressionPath.get("arguments")[0]
         .evaluate()
         .value;
@@ -46,8 +45,7 @@ var requiremarkdowndb = function (_a) {
         throw new Error("There is a problem evaluating the argument " + callExpressionPath.getSource() + "." +
             " Please make sure the value is known at compile time");
     }
-    var fullDirPath = require.resolve(markdownDir, { paths: [dirname] });
-    var content = JSON.stringify(makeMarkdownDB(fullDirPath));
+    var content = JSON.stringify(makeMarkdownDB(path_1.default.resolve(markdownDir)));
     referencePath.parentPath.replaceWith(t.expressionStatement(t.stringLiteral(content)));
 };
 function makeMarkdownDB(dirname) {
@@ -57,12 +55,13 @@ function makeMarkdownDB(dirname) {
         .filter(function (e) { return e !== undefined; });
 }
 function parseMarkdown(filename, id) {
+    var _a;
     if (id === void 0) { id = 0; }
-    var txt = fs_1.default.readdirSync(filename, { encoding: "utf-8" })
-        .join("")
-        .split(";;");
-    var headers = txt[0].split("--");
+    var txt = fs_1.default.readFileSync(filename, { encoding: "utf-8" }).split(';;');
+    console.log('Text' + JSON.stringify(txt) + '\n\n');
+    var headers = txt[0].split("--").filter(function (e) { return e !== ''; });
     var content = mdToHtml(txt[1]);
+    console.log('header' + headers);
     var tag;
     var source;
     var time;
@@ -75,12 +74,12 @@ function parseMarkdown(filename, id) {
             case "tag":
                 if (tokens.length == 1)
                     break;
-                tag = tokens.slice(1, -1);
+                tag = tokens.slice(1);
                 break;
             case "source":
                 if (tokens.length == 1)
                     break;
-                source = tokens.slice(1, -1);
+                source = tokens.slice(1);
                 break;
             // all articles must have a titile and a date.
             case "date":
@@ -93,15 +92,15 @@ function parseMarkdown(filename, id) {
                 break;
             case "title":
                 try {
-                    if (tokens.length == 2)
-                        title = tokens[1];
+                    if (tokens.length >= 2)
+                        title = tokens.slice(1, -1).join('');
                     else {
                         var parsed = /(.+).md/.exec(filename);
-                        title = parsed ? parsed[0] : "untitled";
+                        title = (_a = parsed === null || parsed === void 0 ? void 0 : parsed.pop()) !== null && _a !== void 0 ? _a : "untitled";
                     }
                 }
                 catch (err) {
-                    throw Error("title of " + filename + " is unavaiable");
+                    throw Error("title of " + path_1.default.basename(filename) + " is unavaiable");
                 }
                 break;
         }

@@ -10,8 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "module": "CommonJS",
     "baseUrl": ".",
-    "declaration": true,
-    "isolatedModules": true
+    "declaration": true
   },
   "include": [
     "src"
