@@ -1,0 +1,39 @@
+{
+  "name": "markdowndb.macro",
+  "version": "1.0.1",
+  "description": " compile time markdown database for static blogs",
+  "main": "dist/index.js",
+  "source": "src/index.ts",
+  "type": "dist/index.d.ts",
+  "homepage": "https://github.com/jummy233/markdowndb.macro",
+  "scripts": {
+    "test": "npm run build && jest --no-cache",
+    "build": "rimraf dist && tsc"
+  },
+  "keywords": [],
+  "jest": {
+    "modulePaths": [
+      "src"
+    ]
+  },
+  "author": "Jummy",
+  "license": "MIT",
+  "moduleFileExtensions": [
+    "ts"
+  ],
+  "devDependencies": {
+    "@types/babel-plugin-macros": "^2.8.2",
+    "@types/node": "^14.0.14",
+    "babel-plugin-macros": "^2.8.0",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "@babel/preset-typescript": "^7.10.1",
+    "@types/jest": "^26.0.3",
+    "@types/markdown-it": "^10.0.1",
+    "babel-plugin-tester": "^9.2.0",
+    "jest": "^26.1.0",
+    "markdown-it": "^11.0.0",
+    "microbundle": "^0.12.2"
+  }
+}
