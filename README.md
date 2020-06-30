@@ -57,5 +57,8 @@ type Markdown = {
 ```
 
 ### No query api
-There is no api for query the json data generated since it's in a pretty simple format, and everyone has their own idea of how to construct queries.
+There is no api for querying the json data generated since it's in a pretty simple format, and how to construct queries is very subjective.
 
+### What's next
+* Support user defined header format.
+* Current format will be the default.

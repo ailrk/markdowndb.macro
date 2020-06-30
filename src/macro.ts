@@ -38,7 +38,7 @@ function mdToHtml(md: string): string {
 
 function markdowndbMacros({references, state, babel}: MacroParams) {
   references.default.forEach(referencePath => {
-    if (referencePath.parentPath.type == "CallExpression") {    // expand function call only.
+    if (referencePath.parentPath.type == "CallExpression") {
       requiremarkdowndb({referencePath, state, babel});
     } else {
       throw new Error(`This is not supported ${referencePath.findParent(babel.types.isExpression).getSource()}`);
@@ -114,7 +114,7 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
       case "title":
         try {
           if (tokens.length >= 2)
-            title = tokens.slice(1, -1).join(' ');
+            title = tokens.slice(1).join(' ');
           else {
             const parsed = /(.+).md/.exec(filename);
             title = parsed?.pop() ?? "untitled";

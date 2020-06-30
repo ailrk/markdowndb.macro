@@ -1,12 +1,8 @@
 -- date 2020-06-29
--- tag tag1 tag2 tag3
--- source https://wikipedia.com/yadayadayada
+-- tag sometag anothertag yetanother another other evenmore moretag tagggg
+-- source https://wikipedia.com/yadayadayada an-awesome-book an-not-so-awesome-book
 -- title The rest will all be part of the title 2.
 ;;
-Text text text text
-Text text text text
-Text text text text
-Text text text text
-Text text text text
+The format here is messed up because this is an unprocessed markdown
 Text text text text
 Text text text text
