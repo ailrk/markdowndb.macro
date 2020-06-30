@@ -1,7 +1,7 @@
-# A macro for building markdown json db at compile time for static website.
+# markdowndb.macro
 
 ### What it does
-It's a babel macro that compiles a foler of markdowns into json so you can use it for your static website. Each markdown has some metadata for querying.
+A babel macro for building markdown json db at compile time for static website.
 
 ### Motivation
 I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my alreay chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like json with one function call.
@@ -21,9 +21,6 @@ Each markdown has its own metadata upfront. Write your article in this format:
 ```
  `;;` is the separator between header and markdown content. `tag`, `source`, and `title` are optional. `tag` is for classifying the article, and `source` is for citation.
 
-### No query api
-There is no api for query the json data generated since it's in a pretty simple format, and everyone has their own idea of how to construct queries.
-
 ### How to use
 Assume you have this directory hierachy:
 ```
@@ -33,7 +30,7 @@ articles/
 src/
 
 ```
-where articles is where you put all your markdowns. To make a database, do:
+where `articles` is where you put all your markdowns. To make a database, do:
 
 ```typescript
 import markdowndb from 'markdowndb.macro';
@@ -41,7 +38,7 @@ import markdowndb from 'markdowndb.macro';
 const markdowns = JSON.parse(markdowndb('articles'));
 ```
 
-`markdowns` has following type.
+You can query `markdowns` based on following type:
 ```typescript
 interface MarkdownHeader {
   title: string,
@@ -58,3 +55,7 @@ type Markdown = {
   content: MarkdownText,
 };
 ```
+
+### No query api
+There is no api for query the json data generated since it's in a pretty simple format, and everyone has their own idea of how to construct queries.
+

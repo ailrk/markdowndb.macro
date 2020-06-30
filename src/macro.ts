@@ -79,12 +79,9 @@ function makeMarkdownDB(dirname: string): Array<Markdown> {
 function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
   const txt =
     fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
-  console.log('Text' + JSON.stringify(txt) + '\n\n');
 
   const headers = txt[0].split("--").filter(e => e !== '');
   const content = mdToHtml(txt[1]);
-
-  console.log('header' + headers);
 
   let tag: Array<string> | undefined;
   let source: Array<string> | undefined;
@@ -94,6 +91,7 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
   for (const line of headers) {
     const tokens = line.trim().split(" ");
     switch (tokens[0]) {
+
       // tag and source can be empty
       case "tag":
         if (tokens.length == 1) break
@@ -103,6 +101,7 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
         if (tokens.length == 1) break
         source = tokens.slice(1);
         break
+
       // all articles must have a titile and a date.
       case "date":
         try {
@@ -111,10 +110,11 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
           throw Error(`date ${tokens[1]} format is not correct`);
         }
         break
+
       case "title":
         try {
           if (tokens.length >= 2)
-            title = tokens.slice(1, -1).join('');
+            title = tokens.slice(1, -1).join(' ');
           else {
             const parsed = /(.+).md/.exec(filename);
             title = parsed?.pop() ?? "untitled";
