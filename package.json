@@ -2,18 +2,19 @@
   "name": "markdowndb.macro",
   "version": "1.0.0",
   "description": " compile time markdown database for static blogs",
-  "main": "dist/markdowndb.macro.js",
+  "main": "dist/index.js",
   "source": "src/index.ts",
+  "type": "dist/index.d.ts",
   "scripts": {
     "test": "jest --coverage",
-    "build": "microbundle"
+    "build": "rimraf dist && tsc"
   },
-  "files": [
-    "src/index.ts"
-  ],
   "keywords": [],
   "author": "Jummy",
-  "license": "ISC",
+  "license": "MIT",
+  "moduleFileExtensions": [
+    "ts"
+  ],
   "devDependencies": {
     "@types/babel-plugin-macros": "^2.8.2",
     "@types/node": "^14.0.14",

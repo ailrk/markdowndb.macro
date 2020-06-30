@@ -2,26 +2,23 @@
   "compilerOptions": {
     "target": "es5",
     "esModuleInterop": true,
-    "outDir": "dist",
+    "outDir": "./dist",
     "allowJs": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "typeRoots": [
-      "./types",
-      "./node_modules/@types"
-    ]
+    "module": "CommonJS",
+    "baseUrl": ".",
+    "declaration": true,
+    "isolatedModules": true
   },
   "include": [
-    "src/**/*"
+    "src"
   ],
   "exclude": [
     "node_modules",
     "types",
-    "__tests__"
+    "__tests__/**/*"
   ]
 }
