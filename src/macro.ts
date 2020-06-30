@@ -4,7 +4,7 @@ import MardownIt from 'markdown-it';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
-import {ExpressionStatement, ObjectExpression, ArrayExpression} from '@babel/types';
+import {ObjectExpression, ArrayExpression} from '@babel/types';
 
 export default createMacro(markdowndbMacros);
 
@@ -51,7 +51,6 @@ function markdowndbMacros({references, state, babel}: MacroParams) {
 // db will represented as json string.
 const requiremarkdowndb = ({referencePath, state, babel}: Omit<MacroParams, 'references'> & {referencePath: NodePath<Node>}) => {
   const filename = state.file.opts.filename;
-  const t = babel.types;
   const callExpressionPath = referencePath.parentPath;
   if (typeof (filename) != "string") {
     throw new Error(`filename ${filename} doesn't exist`);

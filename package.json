@@ -1,16 +1,18 @@
 {
   "name": "markdowndb.macro",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": " compile time markdown database for static blogs",
-  "main": "dist/markdowndb.macro.js",
-  "source": "src/macro.ts",
-  "type": "dist/markdowndb.macro.d.ts",
+  "main": "dist/index.js",
+  "type": "dist/index.d.ts",
   "homepage": "https://github.com/jummy233/markdowndb.macro",
   "scripts": {
     "test": "npm run build && jest --no-cache",
     "build": "rimraf dist && tsc"
   },
-  "keywords": ["static cite", "babel-plugin-macros "],
+  "keywords": [
+    "static cite",
+    "babel-plugin-macros "
+  ],
   "jest": {
     "modulePaths": [
       "src"
