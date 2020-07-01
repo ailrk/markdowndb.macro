@@ -81,7 +81,7 @@ const requiremarkdowndb = ({referencePath, state, babel}:
     }
   }
 
-  const content = ASTBuilder.buildMarkdownMapAST(markdownarray);
+  const content = ASTBuilder.buildMarkdownDBAST(markdownarray);
   referencePath.parentPath.replaceWith(t.expressionStatement(content));
 };
 
@@ -102,7 +102,15 @@ namespace ASTBuilder {
       t.blockStatement([
         varAST('a', buildMarkdownMapAST(markdowns)),
         varAST('b', t.newExpression(t.identifier('Map'), [])),
+
         // TODO add elements into b based on the tag map.
+
+        t.blockStatement(
+          tagIndex.map(
+            tagIds => {
+              const [tag, ids] = tagIds;
+              return t.expressionStatement(setMapAST('b', tag, mdAST('a', ids)))
+            })),
 
         t.returnStatement(
           t.objectExpression([
@@ -152,7 +160,7 @@ namespace ASTBuilder {
       ), [t.numericLiteral(n)])));
   }
 
-  export function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
+  function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
     const t = babelcore.types;
 
     const pair = (m: Markdown) => t.arrayExpression([
@@ -186,16 +194,12 @@ namespace ASTBuilder {
     return markdownExpr;
   }
 
-  // pass a reference of MarkdownDB
   // To get the reference of Map<id, Markdown> we assign a name to it, say `m` and build
   // AST the with the form
   //  new Map([s1, [m.get(1), m.get(2)], s2, [m.get(4), m.get(9), m.get(12)] ...])
-  function makeTagIndexMapAST(ref: NodePath<Node>) {
-  }
 
-  function getTagIdMap(markdowns: Array<Markdown>): Map<string, Array<number>> {
+  function getTagIdMap(markdowns: Array<Markdown>): Array<[string, Array<number>]> {
     type Val_ = [string, Array<number>];
-    const t = babelcore.types;
     const buildval = (tag: string): Val_ => [
       tag,
       markdowns.filter(m => {
@@ -211,11 +215,11 @@ namespace ASTBuilder {
       return new Set(flat(a));
     })();
 
-    return new Map((() => {
+    return (() => {
       let acc: Array<Val_> = [];
       tags.forEach(tag => {acc.push(buildval(tag));});
       return acc;
-    })());
+    })();
   }
 }
 
