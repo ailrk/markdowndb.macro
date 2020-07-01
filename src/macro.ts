@@ -4,7 +4,8 @@ import MardownIt from 'markdown-it';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
-import {ObjectExpression, ArrayExpression} from '@babel/types';
+import {ObjectExpression, NewExpression} from '@babel/types';
+import {fnv1a} from './hash';
 
 export default createMacro(markdowndbMacros);
 
@@ -51,6 +52,7 @@ function markdowndbMacros({references, state, babel}: MacroParams) {
 // db will represented as json string.
 const requiremarkdowndb = ({referencePath, state, babel}: Omit<MacroParams, 'references'> & {referencePath: NodePath<Node>}) => {
   const filename = state.file.opts.filename;
+  const t = babel.types;
   const callExpressionPath = referencePath.parentPath;
   if (typeof (filename) != "string") {
     throw new Error(`filename ${filename} doesn't exist`);
@@ -64,15 +66,37 @@ const requiremarkdowndb = ({referencePath, state, babel}: Omit<MacroParams, 'ref
     throw new Error(`There is a problem evaluating the argument ${callExpressionPath.getSource()}.` +
       ` Please make sure the value is known at compile time`);
   }
+  const markdownarray = makeMarkdownDB(path.resolve(markdownDir));
 
-  const content = buildMarkdownArrayAST(makeMarkdownDB(path.resolve(markdownDir)));
-  referencePath.parentPath.replaceWith(content);
+  {
+    // check duplication.
+    const dups = checkdup(markdownarray);
+    if (dups.length !== 0) {
+      throw new Error(`Some article titles collide in their hash. please change title` +
+        ` of these articles ${dups}`);
+    }
+  }
 
+  const content = buildMarkdownMapAST(markdownarray);
+  referencePath.parentPath.replaceWith(t.expressionStatement(content));
 };
 
-function buildMarkdownArrayAST(markdowns: Array<Markdown>): ArrayExpression {
+function checkdup(markdowns: Array<Markdown>) {
+  const ids = ((arr: Array<Markdown>) => arr.map(m => m.header.id))(markdowns);
+  return ids.filter((id, idx) => ids.indexOf(id) !== idx);
+}
+
+function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
   const t = babelcore.types;
-  return t.arrayExpression(markdowns.map(m => buildMarkdownObjAST(m)));
+
+  const pair = (m: Markdown) => t.arrayExpression([
+    t.numericLiteral(m.header.id),
+    buildMarkdownObjAST(m)]);
+
+  const mdExprs = markdowns.map(pair);
+  const mdarryExprs = t.arrayExpression(mdExprs);
+
+  return t.newExpression(t.identifier('Map'), [mdarryExprs]);
 }
 
 function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
@@ -86,6 +110,7 @@ function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
         t.objectProperty(t.identifier("source"), t.arrayExpression(markdown.header.source?.map(e => t.stringLiteral(e)))),
         t.objectProperty(t.identifier("time"),
           t.newExpression(t.identifier("Date"), [t.stringLiteral(markdown.header.time.toJSON())])),
+        t.objectProperty(t.identifier("id"), t.numericLiteral(markdown.header.id)),
       ])),
     t.objectProperty(
       t.identifier("content"), t.stringLiteral(markdown.content),
@@ -97,11 +122,11 @@ function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
 function makeMarkdownDB(dirname: string): Array<Markdown> {
   return fs.readdirSync(dirname)
     .map(filename => path.resolve(dirname, filename))
-    .map((filename, idx) => parseMarkdown(filename, idx))
+    .map(filename => parseMarkdown(filename))
     .filter(e => e !== undefined) as Array<Markdown>;
 }
 
-function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
+function parseMarkdown(filename: string): Markdown | undefined {
   const txt =
     fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
 
@@ -122,6 +147,7 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
         if (tokens.length == 1) break
         tag = tokens.slice(1);
         break
+
       case "source":
         if (tokens.length == 1) break
         source = tokens.slice(1);
@@ -150,5 +176,15 @@ function parseMarkdown(filename: string, id: number = 0): Markdown | undefined {
         break
     }
   }
-  return {header: {title: (title as string), tag, source, time: (time as Date), id}, content};
+  return {
+    header:
+    {
+      title: (title as string),
+      tag,
+      source,
+      time: (time as Date),
+      id: fnv1a((title as string)),
+    },
+    content
+  };
 }

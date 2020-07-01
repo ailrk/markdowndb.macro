@@ -1,7 +1,7 @@
 # markdowndb.macro
 
 ### What it does
-A babel macro for building markdown db at compile time for static website.
+A babel macro for building markdown Map at compile time for static website.
 
 ### Motivation
 I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my alreay chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like object with one function call.
@@ -35,7 +35,7 @@ where `articles` is where you put all your markdowns. To make a database, do:
 ```typescript
 import markdowndb from 'markdowndb.macro';
 
-const markdowns = markdowndb('articles');
+const markdowns: Map<number, Markdown> = markdowndb('articles');
 ```
 
 You can query `markdowns` based on following type:
@@ -55,10 +55,11 @@ type Markdown = {
   content: MarkdownText,
 };
 ```
-
-### No query api
-There is no api for querying the object generated since it's in a pretty simple format, and how to construct queries is very subjective.
+id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible.
 
 ### What's next
 * Support user defined header format.
 * Current format will be the default.
+* compile cached query results at compile time.
+* build time fast index table. make tag indexing faster.
+* build time tag type generator.
