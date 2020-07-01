@@ -61,5 +61,6 @@ id is a 32 digit fnv1a hash on the title. It has very good randomness but collis
 * Support user defined header format.
 * Current format will be the default.
 * compile cached query results at compile time.
+* extraction source and tag at build time.
 * build time fast index table. make tag indexing faster.
 * build time tag type generator.
