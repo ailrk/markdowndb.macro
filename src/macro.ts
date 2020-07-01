@@ -103,8 +103,6 @@ namespace ASTBuilder {
         varAST('a', buildMarkdownMapAST(markdowns)),
         varAST('b', t.newExpression(t.identifier('Map'), [])),
 
-        // TODO add elements into b based on the tag map.
-
         t.blockStatement(
           tagIndex.map(
             tagIds => {
