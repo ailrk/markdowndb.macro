@@ -35,7 +35,9 @@ where `articles` is where you put all your markdowns. To make a database, do:
 ```typescript
 import markdowndb from 'markdowndb.macro';
 
-const markdowns: Map<number, Markdown> = markdowndb('articles');
+const {db, indexTag} = markdowndb('articles');
+const db_ids: Array<number> = db.keys();
+const tag1Markdowns: Array<Markdown> = indexTag.get('tag1');
 ```
 
 You can query `markdowns` based on following type:
@@ -53,6 +55,11 @@ type MarkdownText = string;
 type Markdown = {
   header: MarkdownHeader,
   content: MarkdownText,
+};
+
+interface MarkdownDB {
+  db: Map<number, Markdown>,
+  indexTag: Map<number, Array<Markdown>>,  // hold  references of db values
 };
 ```
 id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible.
