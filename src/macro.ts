@@ -4,7 +4,7 @@ import MardownIt from 'markdown-it';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
-import {ObjectExpression, NewExpression} from '@babel/types';
+import {ObjectExpression, NewExpression, Expression, ArrayExpression, BlockStatement} from '@babel/types';
 import {fnv1a} from './hash';
 import {flat} from './utils';
 
@@ -97,10 +97,61 @@ namespace ASTBuilder {
   // reference once AST from another.
   export function buildMarkdownDBAST(markdowns: Array<Markdown>) {
     const t = babelcore.types;
+    const tagIndex = getTagIdMap(markdowns);
+    return scopedAST(
+      t.blockStatement([
+        varAST('a', buildMarkdownMapAST(markdowns)),
+        varAST('b', t.newExpression(t.identifier('Map'), [])),
+        // TODO add elements into b based on the tag map.
 
+        t.returnStatement(
+          t.objectExpression([
+            t.objectProperty(t.identifier('db'), t.identifier('a')),
+            t.objectProperty(t.identifier('indexTag'), t.identifier('b')),
+          ]),
+        ),
+      ]),
+    );
   }
 
-  // build AST for MarkdownDB Map.
+
+  // AST for an instant call of arrow function.
+  // helpful for creating a local scope.
+  function scopedAST(body: BlockStatement) {
+    const t = babelcore.types;
+    return t.callExpression(
+      t.arrowFunctionExpression([], body),
+      []);
+  }
+
+  function varAST(name: string, val: Expression) {
+    const t = babelcore.types;
+    return t.variableDeclaration(
+      "const",
+      [t.variableDeclarator(t.identifier(name), val)]
+    );
+  }
+
+  // b.set(key, [...])
+  function setMapAST(b: string, key: string, val: ArrayExpression) {
+    const t = babelcore.types;
+    return t.callExpression(
+      t.memberExpression(
+        t.identifier(b),
+        t.identifier('set')),
+      [t.stringLiteral(key), val]);
+  }
+
+  // [a.get(1), a.get(2)]
+  function mdAST(a: string, ids: Array<number>) {
+    const t = babelcore.types;
+    return t.arrayExpression(ids.map(n => t.callExpression(
+      t.memberExpression(
+        t.identifier(a),
+        t.identifier('get')
+      ), [t.numericLiteral(n)])));
+  }
+
   export function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
     const t = babelcore.types;
 
