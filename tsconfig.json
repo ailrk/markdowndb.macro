@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "module": "CommonJS",
     "baseUrl": ".",
-    "declaration": true
+    "declaration": true,
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": [
     "src"

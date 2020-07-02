@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import MardownIt from 'markdown-it';
+import MarkdownItMath from 'markdown-it-math';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
@@ -37,7 +38,7 @@ function mdToHtml(md: string): string {
     html: false,
     breaks: true,
     linkify: true,
-  });
+  }).use(MarkdownItMath);
   return rmd.render(md);
 }
 

@@ -8,3 +8,4 @@
 - more things
 - __bold text__
 
+$$\forall x \in X, \quad \exists y \leq \epsilon$$
