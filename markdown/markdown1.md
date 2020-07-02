@@ -9,3 +9,4 @@
 - __bold text__
 
 $$\forall x \in X, \quad \exists y \leq \epsilon$$
+\(a^2 + b^2 = c^2\)
