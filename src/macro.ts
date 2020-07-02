@@ -259,6 +259,7 @@ namespace Parse {
 
         // all articles must have a titile and a date.
         case "date":
+        case "time":
           try {
             time = new Date(tokens[1]);
           } catch (err) {
@@ -278,6 +279,8 @@ namespace Parse {
             throw Error(`title of ${path.basename(filename)} is unavaiable`);
           }
           break
+        default:
+          throw Error("Incorrect markdown header format.");
       }
     }
     return {
