@@ -38,7 +38,9 @@ import markdowndb from 'markdowndb.macro';
 const {db, indexTag} = markdowndb('articles');
 const db_ids: Array<number> = db.keys();
 const tag1Markdowns: Array<Markdown> = indexTag.get('tag1');
+export {Markdown, MarkdownDB} from 'markdowndb.macro';
 ```
+Note because the type is exposed at compile time, you need to re-export types you want to use at runtime. This is not ideal and if you have a better solution please open a RP.
 
 You can query `markdowns` based on following type:
 ```typescript
