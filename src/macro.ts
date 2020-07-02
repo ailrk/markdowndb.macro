@@ -29,7 +29,7 @@ export interface Markdown {
 // this won't bloat your website :)
 export interface MarkdownDB {
   db: Map<number, Markdown>,
-  indexTag: Map<number, Array<Markdown>>,  // hold  references of db values
+  indexTag: Map<string, Array<Markdown>>,  // hold  references of db values
 };
 
 function mdToHtml(md: string): string {
