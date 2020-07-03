@@ -4,7 +4,7 @@
 A babel macro for building markdown Map at compile time for static website.
 
 ### Motivation
-I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my alreay chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like object with one function call.
+I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my already chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like object with one function call.
 
 ### Note
 All articles will be packed into the final app, so it's only suitable for small personal blog. If you have thounsands of articles a legit backend is a better choice.
@@ -30,15 +30,24 @@ articles/
 src/
 
 ```
-where `articles` is where you put all your markdowns. To make a database, do:
+where `articles` is where you put all your markdowns. To use the database, do:
 
 ```typescript
 import markdowndb from 'markdowndb.macro';
 
-const {db, indexTag} = markdowndb('articles');
+// indexTag and indexTime holds list of references of markdowns corresponds to
+// a specific tag or time. This two maps are constructed at compile time and
+// will not add extra overhead at runtime.
+const {db, indexTag, indexTime} = markdowndb('articles');
 const db_ids: Array<number> = db.keys();
-const tag1Markdowns: Array<Markdown> = indexTag.get('tag1');
+
+// query with tags.
+const tag1Markdowns: Array<Markdown> | undefined = indexTag.get('tag1');
+
+// query with datetime
+const date1Markdowns: Array<Markdown> | undefined = indexTime.get((new Date(2020, 1, 1)).toJSON());
 export {Markdown, MarkdownDB} from 'markdowndb.macro';
+
 ```
 Note because the type is exposed at compile time, you need to re-export types you want to use at runtime. This is not ideal and if you have a better solution please open a RP.
 
@@ -59,17 +68,18 @@ type Markdown = {
   content: MarkdownText,
 };
 
-interface MarkdownDB {
+export interface MarkdownDB {
   db: Map<number, Markdown>,
-  indexTag: Map<number, Array<Markdown>>,  // hold  references of db values
+  indexTag: Map<string, Array<Markdown>>,  // hold  references of db values
+  indexTime: Map<string, Array<Markdown>>,  // hold  references of db values
 };
 ```
-id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible.
+id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible. Notice because datetime is not hashable, to access markdowns via `indexTime` you need to convert the datetime into string by invoking `Date.toJSON()` method.
 
 ### What's next
-* Support user defined header format.
-* Current format will be the default.
-* compile cached query results at compile time.
-* extraction source and tag at build time.
-* build time fast index table. make tag indexing faster.
-* build time tag type generator.
+* [ ] Support user defined header format.
+* [x] Current format will be the default.
+* [x] compile cached query results at compile time.
+* [x] extraction source and tag at build time.
+* [x] build time fast index table. make tag indexing faster.
+* [ ] build tag type generator.
