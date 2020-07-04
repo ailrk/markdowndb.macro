@@ -6,6 +6,7 @@ import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
 import {ObjectExpression, NewExpression, Expression, ArrayExpression, BlockStatement} from '@babel/types';
+import * as HLJS from 'highlightjs';
 import {fnv1a} from './hash';
 import {flat} from './utils';
 
@@ -39,6 +40,14 @@ function mdToHtml(md: string): string {
     html: false,
     breaks: true,
     linkify: true,
+    highlight: (str: string, lang: string) => {
+      if (lang && HLJS.getLanguage(lang)) {
+        try {
+          return HLJS.highlight(lang, str).value;
+        } catch(_) {}
+      }
+      return str;
+    }
   }).use(MarkdownItMath);
   return rmd.render(md);
 }
