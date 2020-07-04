@@ -7,6 +7,7 @@ import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
 import {ObjectExpression, NewExpression, Expression, ArrayExpression, BlockStatement} from '@babel/types';
 import * as HLJS from 'highlightjs';
+import * as textzilla from 'texzilla';
 import {fnv1a} from './hash';
 import {flat} from './utils';
 
@@ -44,11 +45,14 @@ function mdToHtml(md: string): string {
       if (lang && HLJS.getLanguage(lang)) {
         try {
           return HLJS.highlight(lang, str).value;
-        } catch(_) {}
+        } catch (_) {}
       }
       return str;
     }
-  }).use(MarkdownItMath);
+  }).use(MarkdownItMath, {
+    inlineRenderer: (str: string) => textzilla.toMathMLString(str),
+    blockRenderer: (str: string) => textzilla.toMathMLString(str, true),
+  });
   return rmd.render(md);
 }
 
