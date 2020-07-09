@@ -7,7 +7,7 @@ A babel macro for building markdown Map at compile time for static website.
 I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my already chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like object with one function call.
 
 ### Install
-npm install markdowndb.macro
+`npm install markdowndb.macro`
 
 ### Note
 All articles will be packed into the final app, so it's only suitable for small personal blog. If you have thounsands of articles a legit backend is a better choice.
