@@ -1,15 +1,10 @@
-import fs from 'fs';
 import path from 'path';
-import MardownIt from 'markdown-it';
-import MarkdownItMath from 'markdown-it-math';
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as babelcore from '@babel/core';
 import {ObjectExpression, NewExpression, Expression, ArrayExpression, BlockStatement} from '@babel/types';
-import * as HLJS from 'highlightjs';
-import * as textzilla from 'texzilla';
-import {fnv1a} from './hash';
 import {flat} from './utils';
+import * as Parse from './parse';
 
 export default createMacro(markdowndbMacros);
 
@@ -35,26 +30,6 @@ export interface MarkdownDB {
   indexTag: Map<string, Array<Markdown>>,  // hold  references of db values
   indexTime: Map<string, Array<Markdown>>,  // hold  references of db values
 };
-
-function mdToHtml(md: string): string {
-  const rmd = new MardownIt({
-    html: false,
-    breaks: true,
-    linkify: true,
-    highlight: (str: string, lang: string) => {
-      if (lang && HLJS.getLanguage(lang)) {
-        try {
-          return HLJS.highlight(lang, str).value;
-        } catch (_) {}
-      }
-      return str;
-    }
-  }).use(MarkdownItMath, {
-    inlineRenderer: (str: string) => textzilla.toMathMLString(str),
-    blockRenderer: (str: string) => textzilla.toMathMLString(str, true),
-  });
-  return rmd.render(md);
-}
 
 function markdowndbMacros({references, state, babel}: MacroParams) {
   references.default.forEach(referencePath => {
@@ -288,78 +263,4 @@ namespace ASTBuilder {
   }
 }
 
-namespace Parse {
-  // parse the whole directory.
-  export function makeMarkdownDB(dirname: string): Array<Markdown> {
-    return fs.readdirSync(dirname)
-      .map(filename => path.resolve(dirname, filename))
-      .map(filename => parseMarkdown(filename))
-      .filter(e => e !== undefined) as Array<Markdown>;
-  }
 
-  export function parseMarkdown(filename: string): Markdown | undefined {
-    const txt =
-      fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
-
-    const headers = txt[0].split("--").filter(e => e !== '');
-    const content = mdToHtml(txt[1]);
-
-    let tag: Array<string> | undefined;
-    let source: Array<string> | undefined;
-    let time: Date | undefined;
-    let title: string | undefined;
-
-    for (const line of headers) {
-      const tokens = line.trim().split(" ");
-      switch (tokens[0]) {
-
-        // tag and source can be empty
-        case "tag":
-          if (tokens.length == 1) break
-          tag = tokens.slice(1);
-          break
-
-        case "source":
-          if (tokens.length == 1) break
-          source = tokens.slice(1);
-          break
-
-        // all articles must have a titile and a date.
-        case "date":
-        case "time":
-          try {
-            time = new Date(tokens[1]);
-          } catch (err) {
-            throw Error(`date ${tokens[1]} format is not correct`);
-          }
-          break
-
-        case "title":
-          try {
-            if (tokens.length >= 2)
-              title = tokens.slice(1).join(' ');
-            else {
-              const parsed = /(.+).md/.exec(filename);
-              title = parsed?.pop() ?? "untitled";
-            }
-          } catch (err) {
-            throw Error(`title of ${path.basename(filename)} is unavaiable`);
-          }
-          break
-        default:
-          throw Error("Incorrect markdown header format.");
-      }
-    }
-    return {
-      header:
-      {
-        title: (title as string),
-        tag,
-        source,
-        time: (time as Date),
-        id: fnv1a((title as string)),
-      },
-      content
-    };
-  }
-}
