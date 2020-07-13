@@ -1,3 +1,4 @@
+// parse markdowns.
 import fs from 'fs';
 import path from 'path';
 import MardownIt from 'markdown-it';
@@ -5,13 +6,24 @@ import MarkdownItMath from 'markdown-it-math';
 import * as HLJS from 'highlightjs';
 import * as textzilla from 'texzilla';
 import {fnv1a} from './hash';
-import {Markdown} from './macro';
+import {Markdown} from '../types';
+
 // parse the whole directory.
 export function makeMarkdownDB(dirname: string): Array<Markdown> {
-  return fs.readdirSync(dirname)
+  const markdownarray = fs.readdirSync(dirname)
     .map(filename => path.resolve(dirname, filename))
     .map(filename => parseMarkdown(filename))
     .filter(e => e !== undefined) as Array<Markdown>;
+
+  // check duplication.
+  {
+    const dups = checkdup(markdownarray);
+    if (dups.length !== 0) {
+      throw new Error(`Some article titles collide in their hash. please change title` +
+        ` of these articles ${dups}`);
+    }
+  }
+  return markdownarray;
 }
 
 export function parseMarkdown(filename: string): Markdown | undefined {
@@ -100,4 +112,7 @@ function mdToHtml(md: string): string {
   return rmd.render(md);
 }
 
-
+function checkdup(markdowns: Array<Markdown>) {
+  const ids = ((arr: Array<Markdown>) => arr.map(m => m.header.id))(markdowns);
+  return ids.filter((id, idx) => ids.indexOf(id) !== idx);
+}

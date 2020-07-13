@@ -37,6 +37,7 @@
     "@types/highlightjs": "^9.12.0",
     "@types/markdown-it": "^10.0.1",
     "@types/texzilla": "^0.9.0",
+    "axios": "^0.19.2",
     "highlightjs": "^9.16.2",
     "markdown-it": "^11.0.0",
     "markdown-it-math": "^4.1.1",
