@@ -1,4 +1,4 @@
-import {Markdown} from './types';
+import {Markdown, MarkdownDBMode} from './types';
 
 // customized Map
 // if it holds value generated from "static mode", everytime calling
@@ -7,7 +7,12 @@ import {Markdown} from './types';
 // if it holds value generated from "runtime mode", it will behaves
 // just like a normal Map.
 export class MarkdownMap extends Map<number, Markdown> {
+  mode: MarkdownDBMode = "static";
   constructor(other: Map<number, Markdown>) {
     super(other);
   }
+
+  public isStatic = (): boolean => this.mode === "static";
+  public isRuntime = (): boolean => this.mode === "runtime";
+
 }

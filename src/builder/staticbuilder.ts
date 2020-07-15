@@ -4,7 +4,7 @@ import {Markdown, MarkdownHeader} from '../types';
 import {ObjectExpression, NewExpression, callExpression, ArrayExpression, BlockStatement} from '@babel/types';
 import path from 'path';
 import fs from 'fs';
-import axios from 'axios';
+import axios, {AxiosResponse} from 'axios';
 
 // top level AST Builder from static mode.
 // It return a CallExpression, which is a call of an
@@ -16,21 +16,30 @@ export function buildMarkdownDBAST(markdowns: Array<Markdown>): CallExpression {
 
 }
 
-// load.
+// load from public folder.
 namespace Request {
-  export function getMarkdown(id: number) {
-    return axios.get<string>();
-  }
+  export type MakeRequest = (id: number) => Promise<AxiosResponse<string>>;
+
+  export const publicUrlReader = (url: string): MakeRequest =>
+    (id: number) => axios.get<string>(`${url}/${id}`);
 }
 
-namespace FIles {
-  export type MakeFile = (markdown: Markdown) => void;
-  export const createMAkeFile = (pubdir: string): MakeFile => {
-    const dir = path.resolve(pubdir);
-    return (markdown: Markdown) => {
-      const p = path.join(dir, markdown.header.id.toString());
+namespace Files {
+  // parse markdowns into html to pubDir
+  export function toPublic(markdowns: Array<Markdown>, pubDir: string) {
+    const makeFile = publicDirReader(pubDir);
+    markdowns.forEach(m => {makeFile(m);});
+  }
+
+  type MakeFile = (markdown: Markdown) => void;
+
+  const publicDirReader = (pubdir: string): MakeFile =>
+    (markdown: Markdown) => {
+      const p = path.join(path.resolve(pubdir), idToFileName(markdown.header.id));
       fs.writeFileSync(p, markdown.content);
     }
+
+  function idToFileName(id: number): string {
+    return id.toString() + '.html'
   }
 }
-
