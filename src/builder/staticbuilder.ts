@@ -1,10 +1,12 @@
 // module for generating static articles.
 
-import {Markdown, MarkdownHeader} from '../types';
-import {ObjectExpression, NewExpression, callExpression, ArrayExpression, BlockStatement} from '@babel/types';
+import {CallExpression, NewExpression, ArrowFunctionExpression} from '@babel/types';
+import {scopedAST, varAST, setMapAST, mdAST, getTagIdMap, getTimeIdMap} from './astbuilder';
+import * as babelcore from '@babel/core';
 import path from 'path';
 import fs from 'fs';
 import axios, {AxiosResponse} from 'axios';
+import {Markdown} from 'src';
 
 // top level AST Builder from static mode.
 // It return a CallExpression, which is a call of an
@@ -13,8 +15,33 @@ import axios, {AxiosResponse} from 'axios';
 // static mode will generate a Map with an http request lambda function
 // as value.
 export function buildMarkdownDBAST(markdowns: Array<Markdown>): CallExpression {
+  const t = babelcore.types;
+  const tagIndex = getTagIdMap(markdowns);
+  const timeIndex = getTimeIdMap(markdowns);
 
 }
+
+//
+function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
+
+}
+
+// build request arrow function
+// it's evaluated lazily.
+function buildRequestAst(url: string, id: number): ArrowFunctionExpression {
+  const t = babelcore.types;
+  const importAxios = t.callExpression();
+
+  return t.arrowFunctionExpression([],
+    t.callExpression(
+      t.memberExpression(
+        t.identifier('axios'),
+        t.identifier('get')
+      ),
+      [t.stringLiteral(`${url}/${id}`)]
+    ));
+}
+
 
 // load from public folder.
 namespace Request {
@@ -40,6 +67,6 @@ namespace Files {
     }
 
   function idToFileName(id: number): string {
-    return id.toString() + '.html'
+    return id.toString() + '.html';
   }
 }

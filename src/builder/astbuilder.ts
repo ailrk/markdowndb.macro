@@ -20,6 +20,7 @@ export function varAST(name: string, val: Expression) {
     [t.variableDeclarator(t.identifier(name), val)]
   );
 }
+
 // b.set(key, [...])
 export function setMapAST(b: string, key: string, val: ArrayExpression) {
   const t = babelcore.types;
