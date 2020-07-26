@@ -1,54 +1,26 @@
 // module for generating static articles.
 
-import {CallExpression, NewExpression, ArrowFunctionExpression} from '@babel/types';
+import {CallExpression, NewExpression, MemberExpression, ArrowFunctionExpression} from '@babel/types';
 import {scopedAST, varAST, setMapAST, mdAST, getTagIdMap, getTimeIdMap} from './astbuilder';
 import * as babelcore from '@babel/core';
 import path from 'path';
 import fs from 'fs';
-import axios, {AxiosResponse} from 'axios';
 import {Markdown} from 'src';
 
 // top level AST Builder from static mode.
-// It return a CallExpression, which is a call of an
-// anonymous function. This allows us to have local binding and
-// reference once AST from another.
-// static mode will generate a Map with an http request lambda function
-// as value.
-export function buildMarkdownDBAST(markdowns: Array<Markdown>): CallExpression {
+// it builds Map<number, string>, where url is the url of the folder.
+// These provides enough information for mehtod `fetchStatic` in
+// MarkdownMap to send the request.
+export function buildMarkdownDBAST(markdowns: Array<Markdown>, url: string): CallExpression {
   const t = babelcore.types;
   const tagIndex = getTagIdMap(markdowns);
   const timeIndex = getTimeIdMap(markdowns);
-
 }
 
-//
-function buildMarkdownMapAST(markdowns: Array<Markdown>): NewExpression {
-
-}
-
-// build request arrow function
-// it's evaluated lazily.
-function buildRequestAst(url: string, id: number): ArrowFunctionExpression {
+function buildMarkdownMapAST(markdowns: Array<Markdown>, url: string): NewExpression {
   const t = babelcore.types;
-  const importAxios = t.callExpression();
-
-  return t.arrowFunctionExpression([],
-    t.callExpression(
-      t.memberExpression(
-        t.identifier('axios'),
-        t.identifier('get')
-      ),
-      [t.stringLiteral(`${url}/${id}`)]
-    ));
-}
-
-
-// load from public folder.
-namespace Request {
-  export type MakeRequest = (id: number) => Promise<AxiosResponse<string>>;
-
-  export const publicUrlReader = (url: string): MakeRequest =>
-    (id: number) => axios.get<string>(`${url}/${id}`);
+  const mdarryExprs = t.arrayExpression()
+  return t.newExpression(t.identifier('Map'), []);
 }
 
 namespace Files {

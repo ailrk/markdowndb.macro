@@ -5,7 +5,6 @@ import {MarkdownDBMode} from '../types';
 import * as Parse from './parse';
 import {Expression} from '@babel/types';
 
-
 // dispatch markdown build mode.
 export function build(mdpath: string, mode: MarkdownDBMode): Expression {
   const markdownarray = Parse.makeMarkdownDB(path.resolve(mdpath));
@@ -18,4 +17,3 @@ export function build(mdpath: string, mode: MarkdownDBMode): Expression {
       throw new Error("unknown build mode. Either static or runtime");
   }
 }
-
