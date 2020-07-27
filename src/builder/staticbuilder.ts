@@ -11,13 +11,29 @@ import {Markdown} from 'src';
 // it builds Map<number, string>, where url is the url of the folder.
 // These provides enough information for mehtod `fetchStatic` in
 // MarkdownMap to send the request.
-export function buildMarkdownDBAST(markdowns: Array<Markdown>, url: string): CallExpression {
+export function buildMarkdownDBAST(markdowns: Array<Markdown>): CallExpression {
   const t = babelcore.types;
-  const tagIndex = getTagIdMap(markdowns);
-  const timeIndex = getTimeIdMap(markdowns);
+  // TODO: build ast for [number]
+  const a = varAST('a', buildMarkdownMapAST(markdowns));
+  const b = varAST('b', t.newExpression(t.identifier('Map'), []));
+  const c = varAST('c', t.newExpression(t.identifier('Map'), []));
+  const returnStatement = t.returnStatement(
+    t.objectExpression([
+      t.objectProperty(t.identifier('db'), t.identifier('a')),
+      t.objectProperty(t.identifier('indexTag'), t.identifier('b')),
+      t.objectProperty(t.identifier('indexTime'), t.identifier('c')),
+    ]));
+  return scopedAST(
+    t.blockStatement([
+      a, b, c,
+      buildTagIndexBlockAST(markdowns),
+      buildTimeIndexBlockAST(markdowns),
+      returnStatement,
+    ]),
+  );
 }
 
-function buildMarkdownMapAST(markdowns: Array<Markdown>, url: string): NewExpression {
+function buildMarkdownMapAST(markdowns: Array<Markdown>): ObjectExpression {
   const t = babelcore.types;
   const mdarryExprs = t.arrayExpression()
   return t.newExpression(t.identifier('Map'), []);

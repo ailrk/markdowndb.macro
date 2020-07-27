@@ -42,5 +42,3 @@ const requiremarkdowndb = ({referencePath, state, babel}:
   //const content = ASTBuilder.buildMarkdownDBAST(markdownarray);
   referencePath.parentPath.replaceWith(t.expressionStatement(content));
 };
-
-

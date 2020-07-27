@@ -1,3 +1,4 @@
+import {MarkdownMap} from './MarkdownMap';
 // Structure of the markdown header.
 export interface MarkdownHeader {
   title: string,
@@ -17,9 +18,9 @@ export interface Markdown {
 // life type of MarkdownDB is the entire program.
 // this won't bloat your website :)
 export interface MarkdownDB {
-  db: Map<number, Markdown>,
-  indexTag: Map<string, Array<Markdown>>,  // hold  references of db values
-  indexTime: Map<string, Array<Markdown>>,  // hold  references of db values
+  db: MarkdownMap,
+  indexTag: Map<string, Array<Promise<Markdown>>>,  // hold  references of db values
+  indexTime: Map<string, Array<Promise<Markdown>>>,  // hold  references of db values
 };
 
 // specific how to build markdowns

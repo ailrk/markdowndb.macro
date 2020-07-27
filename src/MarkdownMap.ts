@@ -37,15 +37,14 @@ export class MarkdownMap extends Map<number, Markdown | Promise<Markdown>> {
     if (this.mode === "static") {
       return super.get(key) as Promise<Markdown> | undefined;
     } else if (this.mode === "runtime") {
-      return new Promise((resolve, reject) => {
+      const executor = (resolve: any, reject: any) => {
         const markdown = super.get(key) as Markdown | undefined;
-        if (markdown === undefined) {
-          reject();
-        } else {
-          resolve(markdown);
-        }
-      });
+        if (markdown === undefined) reject();
+        else resolve(markdown);
+      };
+      return new Promise(executor);
     }
+    return undefined;
   }
 
   public isStatic = (): boolean => this.mode === "static";
@@ -55,7 +54,6 @@ export class MarkdownMap extends Map<number, Markdown | Promise<Markdown>> {
 const fetchStatic = (url: string, id: number): Promise<Markdown> =>
   fetch(`${url}/${id}`)
     .then(data => data.json());
-
 
 function isRuntimeMap(
   other:
@@ -70,4 +68,3 @@ function isStaticMap(
     | {url: string, ids: Array<number>}): other is {url: string, ids: Array<number>} {
   return (other as {url: string, ids: Array<number>}).url !== undefined;
 }
-

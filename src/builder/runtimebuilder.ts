@@ -1,28 +1,17 @@
 import {Markdown} from '../types';
 import * as babelcore from '@babel/core';
-import {scopedAST, varAST, setMapAST, mdAST, getTagIdMap, getTimeIdMap} from './astbuilder';
-import {ObjectExpression, NewExpression} from '@babel/types';
+import {scopedAST, varAST, setMapAST, mdAST, getTimeIdMap, getTagIdMap} from './astbuilder';
+import {ObjectExpression, NewExpression, CallExpression} from '@babel/types';
 
 // top level AST Builder from runtime mode.
 // It return a CallExpression, which is a call of an
 // anonymous function. This allows us to have local binding and
 // reference once AST from another.
-export function buildMarkdownDBAST(markdowns: Array<Markdown>) {
+export function buildMarkdownDBAST(markdowns: Array<Markdown>): CallExpression {
   const t = babelcore.types;
-  const tagIndex = getTagIdMap(markdowns);
-  const timeIndex = getTimeIdMap(markdowns);
-  const tagIndexBlock = t.blockStatement(
-    tagIndex.map(
-      (tagIds: [any, any]) => {
-        const [tag, ids] = tagIds;
-        return t.expressionStatement(setMapAST('b', tag, mdAST('a', ids)))
-      }));
-  const timeIndexBlock = t.blockStatement(
-    timeIndex.map(
-      (timeIds: [any, any]) => {
-        const [time, ids] = timeIds;
-        return t.expressionStatement(setMapAST('c', time, mdAST('a', ids)))
-      }));
+  const a = varAST('a', buildMarkdownMapAST(markdowns));
+  const b = varAST('b', t.newExpression(t.identifier('Map'), []));
+  const c = varAST('c', t.newExpression(t.identifier('Map'), []));
   const returnStatement = t.returnStatement(
     t.objectExpression([
       t.objectProperty(t.identifier('db'), t.identifier('a')),
@@ -31,11 +20,9 @@ export function buildMarkdownDBAST(markdowns: Array<Markdown>) {
     ]));
   return scopedAST(
     t.blockStatement([
-      varAST('a', buildMarkdownMapAST(markdowns)),
-      varAST('b', t.newExpression(t.identifier('Map'), [])),
-      varAST('c', t.newExpression(t.identifier('Map'), [])),
-      tagIndexBlock,
-      timeIndexBlock,
+      a, b, c,
+      buildTagIndexBlockAST('b', 'a', markdowns),
+      buildTimeIndexBlockAST('c', 'a', markdowns),
       returnStatement,
     ]),
   );
@@ -88,6 +75,28 @@ function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
     contentProperty
   ]);
   return markdownExpr;
+}
+
+export function buildTagIndexBlockAST(to: string, from: string, markdowns: Array<Markdown>) {
+  const tagIndex = getTagIdMap(markdowns);
+  const t = babelcore.types;
+  return t.blockStatement(
+    tagIndex.map(
+      (tagIds: [any, any]) => {
+        const [tag, ids] = tagIds;
+        return t.expressionStatement(setMapAST(to, tag, mdAST(from, ids)))
+      }));
+}
+
+export function buildTimeIndexBlockAST(to: string, from: string, markdowns: Array<Markdown>) {
+  const timeIndex = getTimeIdMap(markdowns);
+  const t = babelcore.types;
+  return t.blockStatement(
+    timeIndex.map(
+      (timeIds: [any, any]) => {
+        const [time, ids] = timeIds;
+        return t.expressionStatement(setMapAST(to, time, mdAST(from, ids)))
+      }));
 }
 
 
