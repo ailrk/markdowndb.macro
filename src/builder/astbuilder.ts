@@ -1,6 +1,6 @@
 import {Markdown, MarkdownHeader} from '../types';
 import * as babelcore from '@babel/core';
-import {Expression, ArrayExpression, BlockStatement} from '@babel/types';
+import {Expression, ArrayExpression, BlockStatement, ObjectExpression} from '@babel/types';
 import {flat} from '../utils';
 
 
@@ -21,15 +21,26 @@ export function varAST(name: string, val: Expression) {
   );
 }
 
+export function buildTaggedUnionAST(kind: string, val: Expression) {
+  const t = babelcore.types;
+  const kindProperty = t.objectProperty(
+    t.identifier('kind'),
+    t.stringLiteral(kind));
+  return t.objectExpression([
+    kindProperty,
+    t.objectProperty(t.identifier('val'), val)]);
+}
+
 // b.set(key, [...])
 export function setMapAST(b: string, key: string, val: ArrayExpression) {
   const t = babelcore.types;
   const memberCall = t.memberExpression(
     t.identifier(b),
     t.identifier('set'));
-  return t.callExpression(
-    memberCall,
-    [t.stringLiteral(key), val]);
+  {
+    const callParams = [t.stringLiteral(key), val];
+    return t.callExpression(memberCall, callParams);
+  }
 }
 
 // [a.get(1), a.get(2)]
@@ -39,8 +50,58 @@ export function mdAST(a: string, ids: Array<number>) {
     t.identifier(a),
     t.identifier('get')
   );
-  return t.arrayExpression(ids.map(n =>
-    t.callExpression(memberCall, [t.numericLiteral(n)])));
+
+  {
+    const elements = ids.map(n =>
+      t.callExpression(memberCall, [t.numericLiteral(n)]));
+    return t.arrayExpression(elements);
+  }
+}
+
+export function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
+  const t = babelcore.types;
+  const header = t.objectProperty(
+    t.identifier('header'),
+    buildMarkdownHeaderObjAST(markdown));
+  const body = t.objectProperty(
+    t.identifier('content'),
+    buildMarkdownContentObjAst(markdown)
+  );
+
+  return t.objectExpression([header, body]);
+}
+
+export function buildMarkdownContentObjAst(markdown: Markdown): ObjectExpression {
+  const t = babelcore.types;
+  const contentProperty = t.objectProperty(
+    t.identifier("content"), t.stringLiteral(markdown.content));
+
+  return t.objectExpression([contentProperty]);
+}
+
+export function buildMarkdownHeaderObjAST(markdown: Markdown): ObjectExpression {
+  const t = babelcore.types;
+  const titleProperty = t.objectProperty(
+    t.identifier("title"),
+    t.stringLiteral(markdown.header.title));
+  const tagProperty = t.objectProperty(
+    t.identifier("tag"),
+    t.arrayExpression(markdown.header.tag?.map(e => t.stringLiteral(e))));
+  const sourceProperty = t.objectProperty(
+    t.identifier("source"),
+    t.arrayExpression(markdown.header.source?.map(e => t.stringLiteral(e))));
+  const timeProperty = t.objectProperty(
+    t.identifier("time"),
+    t.newExpression(
+      t.identifier("Date"),
+      [t.stringLiteral(markdown.header.time.toJSON())]));
+  const idProperty = t.objectProperty(
+    t.identifier("id"),
+    t.numericLiteral(markdown.header.id));
+  return t.objectExpression([
+    titleProperty, tagProperty, sourceProperty, timeProperty,
+    idProperty,
+  ]);
 }
 
 // To get the reference of Map<id, Markdown> we assign a name to it, say `m` and build
@@ -54,11 +115,11 @@ export function getTagIdMap(markdowns: Array<Markdown>): Array<[string, Array<nu
       .map(m => m.header.tag)
       .filter(tl => tl !== undefined) as Array<Array<string>>
   ));
-  return (() => {
+  {
     let acc: Array<Val_> = [];
     tags.forEach(tag => {acc.push(buildval(tag));});
     return acc;
-  })();
+  }
 }
 
 // date can not be key, so use its Json format.
@@ -67,11 +128,11 @@ export function getTimeIdMap(markdowns: Array<Markdown>): Array<[string, Array<n
   const buildval = Util_.buildval(markdowns, "time");
   const timeStrs: Set<string> = new Set(
     markdowns.map(m => m.header.time.toJSON()));
-  return (() => {
+  {
     let acc: Array<Val_> = [];
     timeStrs.forEach(tStr => {acc.push(buildval(tStr))});
     return acc;
-  })();
+  }
 }
 
 namespace Util_ {

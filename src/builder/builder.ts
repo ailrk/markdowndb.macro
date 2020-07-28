@@ -12,7 +12,7 @@ export function build(mdpath: string, mode: MarkdownDBMode): Expression {
     case "runtime":
       return RuntimeBuilder.buildMarkdownDBAST(markdownarray);
     case "static":
-      return StaticBuilder.buildMarkdownDBAST(markdownarray);
+      return StaticBuilder.buildMarkdownDBAST(mdpath, markdownarray);
     default:
       throw new Error("unknown build mode. Either static or runtime");
   }

@@ -15,8 +15,8 @@ export function makeMarkdownDB(dirname: string): Array<Markdown> {
     .map(filename => parseMarkdown(filename))
     .filter(e => e !== undefined) as Array<Markdown>;
 
-  // check duplication.
   {
+    // check duplication.
     const dups = checkdup(markdownarray);
     if (dups.length !== 0) {
       throw new Error(`Some article titles collide in their hash. please change title` +
