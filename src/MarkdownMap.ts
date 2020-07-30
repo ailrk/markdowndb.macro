@@ -1,27 +1,78 @@
-import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, MarkdownText} from './types';
+import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, IndexType} from './types';
 
-type IndexType =
-  | "tag"
-  | "time"
-  ;
-
-class MarkdownDatabase implements MarkdownDB {
+export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
   // it encloses the url it will fetch from.
   defaultMap?: Map<number, Markdown>;
   indexTagMap?: Map<string, Array<Markdown>>;
   indexTimeMap?: Map<string, Array<Markdown>>;
 
-  public get(key: number) {
-    return this.defaultMap?.get(key);
-  }
-
-  public getByTime(key: Date) {
+  get(key: number): Markdown | undefined;
+  get(key: Date | string): Array<Markdown> | undefined;
+  get(key: Date | number | string):
+    | (Markdown | undefined)
+    | (Array<Markdown> | undefined) {
+    if (typeof key === "number") {
+      return this.defaultMap?.get(key);
+    }
+    if (typeof key === "string") {
+      return this.indexTagMap?.get(key);
+    }
     return this.indexTimeMap?.get(key.toJSON());
   }
 
-  public getByTag(tag: string) {
-    return this.indexTagMap?.get(tag);
+  entries(indexType: "default"): IterableIterator<[number, Markdown]> | undefined;
+  entries(indexType: "time" | "tag"):
+    IterableIterator<[string, Array<Markdown>]> | undefined;
+  entries(indexType: IndexType):
+    | IterableIterator<[number, Markdown]>
+    | IterableIterator<[string, Array<Markdown>]>
+    | undefined {
+    if (indexType === "default") {
+      return this.defaultMap?.entries();
+    }
+    if (indexType === "time") {
+      return this.indexTimeMap?.entries();
+    }
+    if (indexType === "tag") {
+      return this.indexTagMap?.entries();
+    }
+  }
+
+  values(indexType: "default"): IterableIterator<Markdown> | undefined;
+  values(indexType: "time" | "tag"):
+    IterableIterator<Array<Markdown>> | undefined;
+  values(indexType: IndexType):
+    | IterableIterator<Markdown>
+    | IterableIterator<Array<Markdown>>
+    | undefined {
+    if (indexType === "default") {
+      return this.defaultMap?.values();
+    }
+    if (indexType === "time") {
+      return this.indexTimeMap?.values();
+    }
+    if (indexType === "tag") {
+      return this.indexTagMap?.values();
+    }
+  }
+
+  keys(indexType: "default"): IterableIterator<number> | undefined;
+  keys(indexType: "time" | "tag"):
+    IterableIterator<string> | undefined;
+  keys(indexType: IndexType):
+    | IterableIterator<number>
+    | IterableIterator<string>
+    | undefined {
+    if (indexType === "default") {
+      return this.defaultMap?.keys();
+    }
+    if (indexType === "time") {
+      return this.indexTimeMap?.keys();
+    }
+    if (indexType === "tag") {
+      return this.indexTagMap?.keys();
+    }
   }
 }
 

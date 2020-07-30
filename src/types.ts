@@ -1,35 +1,46 @@
-import {MarkdownMap} from './MarkdownMap';
+export {MarkdownDatabase, MarkdownStaticDatabase, MarkdownRuntimeDatabase} from './MarkdownMap';
 // Structure of the markdown header.
 export interface MarkdownHeader {
-  title: string,
-  time: Date,
-  tag?: Array<string>,
-  source?: Array<string>,
-  id: number,
+  readonly title: string,
+  readonly time: Date,
+  readonly tag?: Array<string>,
+  readonly source?: Array<string>,
+  readonly id: number,
 };
 
 export type MarkdownText = string;
 
 // primitive Markdown type, only exist at compile time.
 export interface MarkdownRaw {
-  header: MarkdownHeader,
-  content: MarkdownText,
+  readonly header: MarkdownHeader,
+  readonly content: MarkdownText,
 }
 
 export type Markdown = {
-  [P in keyof MarkdownRaw]: MarkdownRaw[P] extends MarkdownText ? Promise<MarkdownText> : MarkdownRaw[P]
+  readonly [P in keyof MarkdownRaw]: MarkdownRaw[P] extends MarkdownText ? Promise<MarkdownText> : MarkdownRaw[P]
 }
 
-// export interface MarkdownDB {
-//   db: MarkdownMap,
-//   indexTag: Map<string, Array<Promise<Markdown>>>,
-//   indexTime: Map<string, Array<Promise<Markdown>>>,
-// };
+export type IndexType =
+  | "tag"
+  | "time"
+  | "default"
+  ;
 
 export interface MarkdownDB {
-  get: (id: number) => Markdown | undefined,
-  getByTime: (data: Date) => Array<Markdown> | undefined,
-  getByTag: (tag: string) => Array<Markdown> | undefined,
+  get(key: number): Markdown | undefined,
+  get(key: Date | string): Array<Markdown> | undefined,
+
+  entries(indexType: "default"): IterableIterator<[number, Markdown]> | undefined,
+  entries(indexType: "time" | "tag"):
+    IterableIterator<[string, Array<Markdown>]> | undefined,
+
+  values(indexType: "default"): IterableIterator<Markdown> | undefined,
+  values(indexType: "time" | "tag"):
+    IterableIterator<Array<Markdown>> | undefined,
+
+  keys(indexType: "default"): IterableIterator<number> | undefined,
+  keys(indexType: "time" | "tag"):
+    IterableIterator<string> | undefined,
 }
 
 // specific how to build markdowns

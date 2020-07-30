@@ -1,10 +1,10 @@
+import {MarkdownDB} from '../dist/types';
 it('test1', () => {
   const markdowndb = require('../dist/macro');
-  const markdowns = markdowndb('markdown');
-  const {db, indexTag, indexTime} = markdowns;
-  console.log(indexTime);
+  const db: MarkdownDB = markdowndb('markdown');
+  console.log(db);
   expect(
-    Array.from(db.values())
+    Array.from(db.values("default"))
       .filter(e => e.header.tag.length === 2).length)
     .toBe(1);
 });
