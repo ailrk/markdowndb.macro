@@ -6,14 +6,14 @@ import MarkdownItMath from 'markdown-it-math';
 import * as HLJS from 'highlightjs';
 import * as textzilla from 'texzilla';
 import {fnv1a} from './hash';
-import {Markdown} from '../types';
+import {MarkdownRaw} from '../types';
 
 // parse the whole directory.
-export function makeMarkdownDB(dirname: string): Array<Markdown> {
+export function makeMarkdownDB(dirname: string): Array<MarkdownRaw> {
   const markdownarray = fs.readdirSync(dirname)
     .map(filename => path.resolve(dirname, filename))
     .map(filename => parseMarkdown(filename))
-    .filter(e => e !== undefined) as Array<Markdown>;
+    .filter(e => e !== undefined) as Array<MarkdownRaw>;
 
   {
     // check duplication.
@@ -26,7 +26,7 @@ export function makeMarkdownDB(dirname: string): Array<Markdown> {
   return markdownarray;
 }
 
-export function parseMarkdown(filename: string): Markdown | undefined {
+export function parseMarkdown(filename: string): MarkdownRaw | undefined {
   const txt =
     fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
 
@@ -112,7 +112,7 @@ function mdToHtml(md: string): string {
   return rmd.render(md);
 }
 
-function checkdup(markdowns: Array<Markdown>) {
-  const ids = ((arr: Array<Markdown>) => arr.map(m => m.header.id))(markdowns);
+function checkdup(markdowns: Array<MarkdownRaw>) {
+  const ids = ((arr: Array<MarkdownRaw>) => arr.map(m => m.header.id))(markdowns);
   return ids.filter((id, idx) => ids.indexOf(id) !== idx);
 }

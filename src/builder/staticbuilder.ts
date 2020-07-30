@@ -108,22 +108,15 @@ export function buildTimeIndexBlockAST(to: string, from: string, markdowns: Arra
 
 namespace Files {
   // parse markdowns into html to pubDir
-  export function toPublic(
-    markdowns: Array<MarkdownRaw>,
-    pubDir: string,
-    url?: string) {
-    const makeFile = publicDirReader(pubDir, url);
-    markdowns.forEach(m => {makeFile(m);});
-  }
-
-  type MakeFile = (markdown: MarkdownRaw) => void;
-
-  const publicDirReader = (pubdir: string, url?: string): MakeFile =>
-    (markdown: MarkdownRaw) => {
+  export function toPublic(markdowns: Array<MarkdownRaw>, pubDir: string, url?: string) {
+    const makeFile = (markdown: MarkdownRaw) => {
       const p = path.join(
         url ?? "",
-        path.resolve(pubdir),
+        path.resolve(pubDir),
         markdown.header.id.toString() + '.html');
       fs.writeFileSync(p, markdown.content);
     }
+    markdowns.forEach(m => {makeFile(m);});
+  }
+
 }
