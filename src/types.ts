@@ -10,16 +10,27 @@ export interface MarkdownHeader {
 
 export type MarkdownText = string;
 
-export interface Markdown {
+// primitive Markdown type, only exist at compile time.
+export interface MarkdownRaw {
   header: MarkdownHeader,
   content: MarkdownText,
-};
+}
+
+export type Markdown = {
+  [P in keyof MarkdownRaw]: MarkdownRaw[P] extends MarkdownText ? Promise<MarkdownText> : MarkdownRaw[P]
+}
+
+// export interface MarkdownDB {
+//   db: MarkdownMap,
+//   indexTag: Map<string, Array<Promise<Markdown>>>,
+//   indexTime: Map<string, Array<Promise<Markdown>>>,
+// };
 
 export interface MarkdownDB {
-  db: MarkdownMap,
-  indexTag: Map<string, Array<Promise<Markdown>>>,
-  indexTime: Map<string, Array<Promise<Markdown>>>,
-};
+  get: (id: number) => Markdown | undefined,
+  getByTime: (data: Date) => Array<Markdown> | undefined,
+  getByTag: (tag: string) => Array<Markdown> | undefined,
+}
 
 // specific how to build markdowns
 // By default it uses "static method"

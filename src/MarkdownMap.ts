@@ -1,101 +1,92 @@
-import {Markdown, MarkdownDBMode, MarkdownHeader} from './types';
+import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, MarkdownText} from './types';
 
-type StaticObject = {url: string, headers: Array<MarkdownHeader>};
-
-type Other =
-  | {kind: "runtime", val: Map<number, Markdown>}
-  | {kind: "static", val: StaticObject}
+type IndexType =
+  | "tag"
+  | "time"
   ;
 
-// Collection type holding markdowns
-export class MarkdownDataBase extends Map<number, Promise<Markdown>> {
-  mode: MarkdownDBMode | undefined;
-  indexTagMap: Map<string, Array<Promise<Markdown>>> = new Map();
-  indexTimeMap: Map<string, Array<Promise<Markdown>>> = new Map();
-  fetchStatic: ((id: number) => Promise<Markdown>) | undefined;
-
-  public constructor(other: Other) {
-    super((() => {
-      switch (other.kind) {
-        case "runtime":
-          this.mode = "runtime";
-          return Array.from(other.val)
-            .map(e => {
-              const [id, markdown] = e;
-              return [id, Promise.resolve(markdown)] as [number, Promise<Markdown>];
-            });
-        case "static":
-          this.mode = "static";
-          const {url, headers} = other.val;
-          this.fetchStatic = fetchStatic(url);
-          return headers.map(header => {
-            const id = header.id;
-            return [id, fetchStatic(url)(id)] as [number, Promise<Markdown>];
-          });
-        default:
-          throw new Error("Unreachable");
-      }
-    })());
-  }
-
-  public initIndexTagMap
-    (prop:
-      | {kind: "runtime", map: Map<string, Array<Markdown>>}
-      | {kind: "static", map: Map<string, Array<MarkdownHeader>>},
-      type: "tag" | "time") {
-    let m: Map<string, Array<Promise<Markdown>>>;
-    const mkarray =
-      (map: Map<string, Array<any>>,
-        f: (v: any[]) => Array<Promise<Markdown>>) =>
-        Array.from(map).map(e => {
-          const [k, v] = e;
-          return [k, f(v)] as [string, Array<Promise<Markdown>>];
-        });
-    switch (prop.kind) {
-      case "runtime":
-        m = new Map(mkarray(prop.map,
-          (xs: Array<Markdown>) => xs.map(m => Promise.resolve(m))));
-        break;
-      case "static":
-        m = new Map(mkarray(prop.map,
-          (xs: Array<MarkdownHeader>) =>
-            xs.map(m => this.fetchStatic!(m.id))));
-        break;
-      default:
-        throw new Error("Unreachable");
-    }
-
-    switch (type) {
-      case "tag":
-        this.indexTagMap = m;
-      case "time":
-        this.indexTimeMap = m;
-    }
-  }
+class MarkdownDatabase implements MarkdownDB {
+  // different views of Markdowns, all constructed at compile time.
+  // it encloses the url it will fetch from.
+  defaultMap?: Map<number, Markdown>;
+  indexTagMap?: Map<string, Array<Markdown>>;
+  indexTimeMap?: Map<string, Array<Markdown>>;
 
   public get(key: number) {
-    return super.get(key) as Promise<Markdown>;
+    return this.defaultMap?.get(key);
   }
 
   public getByTime(key: Date) {
-    return this.indexTimeMap.get(key.toJSON());
+    return this.indexTimeMap?.get(key.toJSON());
   }
 
   public getByTag(tag: string) {
-    return this.indexTagMap.get(tag);
+    return this.indexTagMap?.get(tag);
   }
-
-  public isStatic = (): boolean => this.mode === "static";
-  public isRuntime = (): boolean => this.mode === "runtime";
 }
 
-const fetchStatic = (url: string) => (id: number): Promise<Markdown> =>
+export class MarkdownRuntimeDatabase extends MarkdownDatabase {
+  public constructor(
+    other: Map<number, MarkdownRaw>,
+    indices: Record<IndexType, Map<string, Array<MarkdownRaw>>>) {
+    super();
+    const f: ToMarkdown<MarkdownRaw> = val => {
+      return {
+        header: val.header,
+        content: Promise.resolve(val.content),
+      };
+    };
+    this.defaultMap = new Map(
+      Array.from(other)
+        .map(e => {
+          const [id, raw] = e;
+          return [id, f(raw)] as [number, Markdown];
+        })
+    );
+    this.indexTagMap = promisify(indices.tag, f);
+    this.indexTimeMap = promisify(indices.time, f);
+  }
+}
+
+export class MarkdownStaticDatabase extends MarkdownDatabase {
+  fetchStatic: ((id: number) => Promise<Markdown>) | undefined;
+
+  public constructor(
+    other: {url: string, headers: Map<number, MarkdownHeader>},
+    indices: Record<IndexType, Map<string, Array<MarkdownHeader>>>) {
+    super();
+    const {url, headers} = other;
+    const f: ToMarkdown<MarkdownHeader> = val => {
+      return {
+        header: val,
+        content: fetchStatic(url)(val.id),
+      };
+    };
+    this.defaultMap = new Map(
+      Array.from(headers)
+        .map(e => {
+          const [id, header] = e;
+          const md: Markdown = f(header);
+          return [id, md] as [number, Markdown];
+        })
+    );
+    this.indexTagMap = promisify(indices.tag, f);
+    this.indexTimeMap = promisify(indices.time, f);
+  }
+}
+
+type ToMarkdown<T> = (val: T) => Markdown;
+export function promisify<K, T>(map: Map<K, Array<T>>, f: ToMarkdown<T>) {
+  const array =
+    Array.from(map)
+      .map(e => {
+        const [k, v] = e;
+        const v1 = v.map(f);
+        return [k, v1] as [K, Array<Markdown>];
+      });
+  return new Map(array);
+}
+
+const fetchStatic = (url: string) => (id: number): Promise<MarkdownText> =>
   fetch(`${url}/${id}`)
-    .then(data => data.json());
-
-function isRuntimeMap(
-  other:
-    | Map<number, Markdown>
-    | StaticObject): other is Map<number, Markdown> {
-  return (other as Map<number, Markdown>).entries !== undefined;
-}
+    .then(data => data.text());

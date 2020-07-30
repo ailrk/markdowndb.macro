@@ -1,6 +1,6 @@
-import {Markdown, MarkdownHeader} from '../types';
+import {MarkdownRaw, MarkdownHeader} from '../types';
 import * as babelcore from '@babel/core';
-import {Expression, ArrayExpression, BlockStatement, ObjectExpression} from '@babel/types';
+import {Expression, ArrayExpression, BlockStatement} from '@babel/types';
 import {flat} from '../utils';
 
 
@@ -19,16 +19,6 @@ export function varAST(name: string, val: Expression) {
     "const",
     [t.variableDeclarator(t.identifier(name), val)]
   );
-}
-
-export function buildTaggedUnionAST(kind: string, val: Expression) {
-  const t = babelcore.types;
-  const kindProperty = t.objectProperty(
-    t.identifier('kind'),
-    t.stringLiteral(kind));
-  return t.objectExpression([
-    kindProperty,
-    t.objectProperty(t.identifier('val'), val)]);
 }
 
 // b.set(key, [...])
@@ -58,7 +48,21 @@ export function mdAST(a: string, ids: Array<number>) {
   }
 }
 
-export function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
+// Map<number, MarkdownRaw>
+export function buildMarkdownMapAST(markdowns: Array<MarkdownRaw>) {
+  const t = babelcore.types;
+  const pair = (m: MarkdownRaw) => t.arrayExpression([
+    t.numericLiteral(m.header.id),
+    buildMarkdownObjAST(m)]);
+
+  const mdExprs = markdowns.map(pair);
+  const mdarryExprs = t.arrayExpression(mdExprs);
+
+  return t.newExpression(t.identifier('Map'), [mdarryExprs]);
+}
+
+
+export function buildMarkdownObjAST(markdown: MarkdownRaw) {
   const t = babelcore.types;
   const header = t.objectProperty(
     t.identifier('header'),
@@ -71,7 +75,7 @@ export function buildMarkdownObjAST(markdown: Markdown): ObjectExpression {
   return t.objectExpression([header, body]);
 }
 
-export function buildMarkdownContentObjAst(markdown: Markdown): ObjectExpression {
+export function buildMarkdownContentObjAst(markdown: MarkdownRaw) {
   const t = babelcore.types;
   const contentProperty = t.objectProperty(
     t.identifier("content"), t.stringLiteral(markdown.content));
@@ -79,7 +83,7 @@ export function buildMarkdownContentObjAst(markdown: Markdown): ObjectExpression
   return t.objectExpression([contentProperty]);
 }
 
-export function buildMarkdownHeaderObjAST(markdown: Markdown): ObjectExpression {
+export function buildMarkdownHeaderObjAST(markdown: MarkdownRaw) {
   const t = babelcore.types;
   const titleProperty = t.objectProperty(
     t.identifier("title"),
@@ -104,17 +108,16 @@ export function buildMarkdownHeaderObjAST(markdown: Markdown): ObjectExpression 
   ]);
 }
 
-// To get the reference of Map<id, Markdown> we assign a name to it, say `m` and build
-// AST the with the form
 //  new Map([s1, [m.get(1), m.get(2)], s2, [m.get(4), m.get(9), m.get(12)] ...])
-export function getTagIdMap(markdowns: Array<Markdown>): Array<[string, Array<number>]> {
+export function getTagIdMap(headers: Array<MarkdownHeader>): Array<[string, Array<number>]> {
   type Val_ = [string, Array<number>];
-  const buildval = Util_.buildval(markdowns, "tag");
+  const buildval = Util_.buildval(headers, "tag");
   const tags: Set<string> = new Set(flat(
-    markdowns
-      .map(m => m.header.tag)
+    headers
+      .map(m => m.tag)
       .filter(tl => tl !== undefined) as Array<Array<string>>
   ));
+
   {
     let acc: Array<Val_> = [];
     tags.forEach(tag => {acc.push(buildval(tag));});
@@ -123,11 +126,12 @@ export function getTagIdMap(markdowns: Array<Markdown>): Array<[string, Array<nu
 }
 
 // date can not be key, so use its Json format.
-export function getTimeIdMap(markdowns: Array<Markdown>): Array<[string, Array<number>]> {
+export function getTimeIdMap(headers: Array<MarkdownHeader>): Array<[string, Array<number>]> {
   type Val_ = [string, Array<number>];
-  const buildval = Util_.buildval(markdowns, "time");
+  const buildval = Util_.buildval(headers, "time");
   const timeStrs: Set<string> = new Set(
-    markdowns.map(m => m.header.time.toJSON()));
+    headers.map(m => m.time.toJSON()));
+
   {
     let acc: Array<Val_> = [];
     timeStrs.forEach(tStr => {acc.push(buildval(tStr))});
@@ -137,28 +141,45 @@ export function getTimeIdMap(markdowns: Array<Markdown>): Array<[string, Array<n
 
 namespace Util_ {
   // build tuple of key and all markdowns it refers to.
-  export const buildval = (markdowns: Array<Markdown>, keytype: keyof MarkdownHeader) => (key: string): [string, Array<number>] => [
-    key,
-    markdowns.filter(m => {
-      let val: any;
-      switch (keytype) {
-        case "time":
-          val = m.header.time.toJSON();
-          return val !== undefined && key === val;
-        case "tag":
-          val = m.header.tag;
-          return val !== undefined && (val as Array<string>).includes(key);
-        case "source":
-          val = m.header.source;
-          return val !== undefined && (val as Array<string>).includes(key);
-        case "time":
-          val = m.header.title;
-          return val !== undefined && key === val;
-        default:
-          return false;
+  export const buildval =
+    (markdowns: Array<MarkdownHeader>, keytype: keyof MarkdownHeader) =>
+      (key: string): [string, Array<number>] => {
+        const f = (m: MarkdownHeader) => {
+          let val: any;
+          switch (keytype) {
+            case "time":
+              val = m.time.toJSON();
+              return key === val!;
+            case "tag":
+              val = m.tag;
+              return (val! as Array<string>).includes(key);
+            case "source":
+              val = m.source;
+              return (val! as Array<string>).includes(key);
+            case "time":
+              val = m.title;
+              return key === val!;
+            default:
+              return false;
+          }
+        };
+        return [
+          key,
+          markdowns.filter(f).map(m => m.id),
+        ];
       }
-    }).map(m => m.header.id),
-  ];
 }
 
+export function buildIndexObjAST(tag: string, time: string) {
+  const t = babelcore.types;
+  const tagProperty = t.objectProperty(
+    t.identifier("tag"),
+    t.identifier(tag)
+  );
 
+  const timeProperty = t.objectProperty(
+    t.identifier("time"),
+    t.identifier(time)
+  );
+  return t.objectExpression([tagProperty, timeProperty]);
+}

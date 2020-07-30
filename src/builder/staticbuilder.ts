@@ -1,20 +1,34 @@
 // module for generating static articles.
 
-import {CallExpression, ObjectExpression, MemberExpression, ArrowFunctionExpression} from '@babel/types';
-import {scopedAST, varAST, setMapAST, mdAST, getTagIdMap, getTimeIdMap, buildMarkdownHeaderObjAST} from './astbuilder';
+import {CallExpression} from '@babel/types';
+import {
+  scopedAST,
+  varAST,
+  setMapAST,
+  mdAST,
+  buildMarkdownHeaderObjAST,
+  getTagIdMap,
+  getTimeIdMap,
+} from './astbuilder';
 import * as babelcore from '@babel/core';
 import path from 'path';
 import fs from 'fs';
-import {Markdown} from 'src';
+import {MarkdownRaw} from 'src/types';
 
 // top level AST Builder from static mode.
-// {url: string, ids: Array<number>}
-export function buildMarkdownDBAST(url: string, markdowns: Array<Markdown>): CallExpression {
+// Process:
+// 1. make a :: {url: string, headers: Map<string, MarkdownHeader>}
+// 2. declare b, c :: Map<string, MarkdownHeader>
+// 3. mmap = MarkdownStaticDatabase(a, {time, a, tag: b})
+// 4. return mmap.
+export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>): CallExpression {
   const t = babelcore.types;
-  // TODO: build ast for [number]
-  const a = varAST('a', buildMarkdownObjAST(url, markdowns));
-  const b = varAST('b', t.newExpression(t.identifier('Map'), []));
-  const c = varAST('c', t.newExpression(t.identifier('Map'), []));
+  // {url: string, headers: Array<MarkdownHeader>}
+
+  const defaultMap = varAST('defaultMap', buildMarkdownHeaderMapAST(markdowns));
+  const tag = varAST('tag', t.newExpression(t.identifier('Map'), []));
+  const time = varAST('time', t.newExpression(t.identifier('Map'), []));
+  const staticObj = varAST('mmap', buildMarkdownStaticObjAST('a'));
   const returnStatement = t.returnStatement(
     t.objectExpression([
       t.objectProperty(t.identifier('db'), t.identifier('a')),
@@ -23,15 +37,16 @@ export function buildMarkdownDBAST(url: string, markdowns: Array<Markdown>): Cal
     ]));
   return scopedAST(
     t.blockStatement([
-      a, b, c,
-      buildTagIndexBlockAST(markdowns),
-      buildTimeIndexBlockAST(markdowns),
+      defaultMap, tag, time, mmap,
+      buildTagIndexBlockAST('mmap', 'a', markdowns),
+      buildTimeIndexBlockAST('mmap', 'b', markdowns),
       returnStatement,
     ]),
   );
 }
 
-function buildMarkdownObjAST(url: string, markdowns: Array<Markdown>): ObjectExpression {
+// { url: string, Map<number, MarkdownHeader>}
+function buildMarkdownStaticObjAST(url: string, markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
   const headersArryExprs = t.arrayExpression(
     markdowns.map(m => buildMarkdownHeaderObjAST(m))
@@ -45,47 +60,58 @@ function buildMarkdownObjAST(url: string, markdowns: Array<Markdown>): ObjectExp
   return t.objectExpression([urlProperty, headersProperty]);
 }
 
-namespace Files {
-  // parse markdowns into html to pubDir
-  export function toPublic(markdowns: Array<Markdown>, pubDir: string, url?: string) {
-    const makeFile = publicDirReader(pubDir, url);
-    markdowns.forEach(m => {makeFile(m);});
-  }
+// Map<number, MarkdownHeader>
+function buildMarkdownHeaderMapAST(markdowns: Array<MarkdownRaw>) {
+  const t = babelcore.types;
+  const pair = (m: MarkdownRaw) => t.arrayExpression([
+    t.numericLiteral(m.header.id),
+    buildMarkdownHeaderObjAST(m)]);
 
-  type MakeFile = (markdown: Markdown) => void;
-
-  const publicDirReader = (pubdir: string, url?: string): MakeFile =>
-    (markdown: Markdown) => {
-      const p = path.join(
-        url ?? "",
-        path.resolve(pubdir),
-        idToFileName(markdown.header.id));
-      fs.writeFileSync(p, markdown.content);
-    }
-
-  function idToFileName(id: number): string {
-    return id.toString() + '.html';
-  }
+  const mdExpr = markdowns.map(pair);
+  const mdarryExprs = t.arrayExpression(mdExpr);
+  return t.newExpression(t.identifier('Map'), [mdarryExprs]);
 }
 
-// TODO
-function buildTagIndexBlockAST(to: string, from: string, markdowns: Array<Markdown>) {
-  const tagIndex = getTagIdMap(markdowns);
+// _ :: Map<string, Array<MarkdownHeader>>
+export function buildTagIndexBlockAST(to: string, from: string, markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
+  const tagIndex = getTagIdMap(markdowns.map(m => m.header));
   const block = tagIndex.map(
-    (tagIds: [any, any]) => {
+    (tagIds: [string, Array<number>]) => {
       const [tag, ids] = tagIds;
       return t.expressionStatement(setMapAST(to, tag, mdAST(from, ids)))
     });
   return t.blockStatement(block);
 }
 
-function buildTimeIndexBlockAST(to: string, from: string, markdowns: Array<Markdown>) {
-  const timeIndex = getTimeIdMap(markdowns);
+export function buildTimeIndexBlockAST(to: string, from: string, markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
-  const block = (timeIds: [any, any]) => {
+  const timeIndex = getTimeIdMap(markdowns.map(m => m.header));
+  const block = timeIndex.map((timeIds: [any, any]) => {
     const [time, ids] = timeIds;
     return t.expressionStatement(setMapAST(to, time, mdAST(from, ids)))
-  };
-  return t.blockStatement(timeIndex.map(block));
+  });
+  return t.blockStatement(block);
+}
+
+namespace Files {
+  // parse markdowns into html to pubDir
+  export function toPublic(
+    markdowns: Array<MarkdownRaw>,
+    pubDir: string,
+    url?: string) {
+    const makeFile = publicDirReader(pubDir, url);
+    markdowns.forEach(m => {makeFile(m);});
+  }
+
+  type MakeFile = (markdown: MarkdownRaw) => void;
+
+  const publicDirReader = (pubdir: string, url?: string): MakeFile =>
+    (markdown: MarkdownRaw) => {
+      const p = path.join(
+        url ?? "",
+        path.resolve(pubdir),
+        markdown.header.id.toString() + '.html');
+      fs.writeFileSync(p, markdown.content);
+    }
 }
