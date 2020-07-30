@@ -170,6 +170,7 @@ namespace Util_ {
       }
 }
 
+// {tag: ..., time: ...}
 export function buildIndexObjAST(tag: string, time: string) {
   const t = babelcore.types;
   const tagProperty = t.objectProperty(

@@ -24,11 +24,13 @@ export function buildMarkdownDBAST(markdowns: Array<MarkdownRaw>): CallExpressio
   const tagIndex = varAST('tagIndex', t.newExpression(t.identifier('Map'), []));
   const timeIndex = varAST('timeIndex', t.newExpression(t.identifier('Map'), []));
   const mmap = varAST('mmap', buildRuntimeMarkdownDatabaseAST('defaultMap', 'tagIndex', 'timeIndex'));
-  const returnStatement = t.returnStatement(t.stringLiteral('mmap'));
+  const returnStatement = t.returnStatement(t.identifier('mmap'));
   {
     const scoped = scopedAST(
       t.blockStatement([
-        defaultMap, tagIndex, timeIndex,
+        defaultMap,
+        tagIndex,
+        timeIndex,
         buildTagIndexBlockAST('tagIndex', 'defaultMap', markdowns),
         buildTimeIndexBlockAST('timeIndex', 'defaultMap', markdowns),
         mmap,

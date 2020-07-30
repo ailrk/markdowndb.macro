@@ -7,6 +7,7 @@ import {
   setMapAST,
   mdAST,
   buildMarkdownHeaderObjAST,
+  buildIndexObjAST,
   getTagIdMap,
   getTimeIdMap,
 } from './astbuilder';
@@ -26,34 +27,45 @@ export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>): 
   // {url: string, headers: Array<MarkdownHeader>}
 
   const defaultMap = varAST('defaultMap', buildMarkdownHeaderMapAST(markdowns));
-  const tag = varAST('tag', t.newExpression(t.identifier('Map'), []));
-  const time = varAST('time', t.newExpression(t.identifier('Map'), []));
-  const staticObj = varAST('mmap', buildMarkdownStaticObjAST('a'));
-  const returnStatement = t.returnStatement(
-    t.objectExpression([
-      t.objectProperty(t.identifier('db'), t.identifier('a')),
-      t.objectProperty(t.identifier('indexTag'), t.identifier('b')),
-      t.objectProperty(t.identifier('indexTime'), t.identifier('c')),
-    ]));
-  return scopedAST(
-    t.blockStatement([
-      defaultMap, tag, time, mmap,
-      buildTagIndexBlockAST('mmap', 'a', markdowns),
-      buildTimeIndexBlockAST('mmap', 'b', markdowns),
-      returnStatement,
-    ]),
-  );
+  const tagIdex = varAST('tagIdex', t.newExpression(t.identifier('Map'), []));
+  const timeIndex = varAST('timeIndex', t.newExpression(t.identifier('Map'), []));
+  const staticObj = varAST('staticObj', buildMarkdownStaticObjAST(url, 'defaultMap'));
+  const mmap = varAST('mmap'
+    , buildStaticMarkdownDatabaseAST('defaultMap', 'tagIdex', 'timeIndex'));
+  const returnStatement = t.returnStatement(t.identifier('mmap'));
+  {
+    const scoped = scopedAST(
+      t.blockStatement([
+        defaultMap,
+        tagIdex,
+        timeIndex,
+        staticObj,
+        buildTagIndexBlockAST('tagIdex', 'defaultMap', markdowns),
+        buildTimeIndexBlockAST('timeIndex', 'defaultMap', markdowns),
+        mmap,
+        returnStatement,
+      ]),
+    );
+    return scoped;
+  }
 }
 
-// { url: string, Map<number, MarkdownHeader>}
-function buildMarkdownStaticObjAST(url: string, markdowns: Array<MarkdownRaw>) {
+function buildStaticMarkdownDatabaseAST(main: string, tag: string, time: string) {
   const t = babelcore.types;
-  const headersArryExprs = t.arrayExpression(
-    markdowns.map(m => buildMarkdownHeaderObjAST(m))
-  );
+  return t.newExpression(
+    t.identifier('MarkdownStaticDatabase'),
+    [
+      t.identifier(main),
+      buildIndexObjAST(tag, time),
+    ]);
+}
+
+// { url: string, map: Map<number, MarkdownHeader>}
+function buildMarkdownStaticObjAST(url: string, headers: string) {
+  const t = babelcore.types;
   const headersProperty = t.objectProperty(
     t.identifier('headers'),
-    headersArryExprs);
+    t.identifier(headers));
   const urlProperty = t.objectProperty(
     t.identifier('url'),
     t.stringLiteral(url));
