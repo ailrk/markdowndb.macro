@@ -1,4 +1,4 @@
-import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, IndexType} from './types';
+import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, IndexType, MarkdownText} from './types';
 
 export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
