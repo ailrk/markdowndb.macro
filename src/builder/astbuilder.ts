@@ -1,4 +1,5 @@
 import {MarkdownRaw, MarkdownHeader} from '../types';
+import template from '@babel/template';
 import * as babelcore from '@babel/core';
 import {Expression, ArrayExpression, BlockStatement} from '@babel/types';
 import {flat} from '../utils';
@@ -6,23 +7,21 @@ import {flat} from '../utils';
 
 // AST for an instant call of arrow function.
 // helpful for creating a local scope.
-export function scopedAST(body: BlockStatement) {
-  const t = babelcore.types;
-  return t.callExpression(
-    t.arrowFunctionExpression([], body),
-    []);
+export function scopeBuilder(body: BlockStatement) {
+  return template.expression`(() =>  BODY )()`({BODY: body});
 }
 
-export function varAST(name: string, val: Expression) {
+export function assignBuilder(name: string, val: Expression) {
   const t = babelcore.types;
-  return t.variableDeclaration(
-    "const",
-    [t.variableDeclarator(t.identifier(name), val)]
-  );
+  return template.statement`const NAME = VAL;`
+    ({
+      NAME: t.identifier(name),
+      VAL: val
+    });
 }
 
 // b.set(key, [...])
-export function setMapAST(b: string, key: string, val: ArrayExpression) {
+export function setMapBuilder(b: string, key: string, val: ArrayExpression) {
   const t = babelcore.types;
   const memberCall = t.memberExpression(
     t.identifier(b),
@@ -34,7 +33,7 @@ export function setMapAST(b: string, key: string, val: ArrayExpression) {
 }
 
 // [a.get(1), a.get(2)]
-export function mdAST(a: string, ids: Array<number>) {
+export function markdownArrayBuilder(a: string, ids: Array<number>) {
   const t = babelcore.types;
   const memberCall = t.memberExpression(
     t.identifier(a),
@@ -49,7 +48,7 @@ export function mdAST(a: string, ids: Array<number>) {
 }
 
 // Map<number, MarkdownRaw>
-export function buildMarkdownMapAST(markdowns: Array<MarkdownRaw>) {
+export function markdownMapBuilder(markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
   const pair = (m: MarkdownRaw) => t.arrayExpression([
     t.numericLiteral(m.header.id),
@@ -63,49 +62,39 @@ export function buildMarkdownMapAST(markdowns: Array<MarkdownRaw>) {
 
 
 export function buildMarkdownObjAST(markdown: MarkdownRaw) {
-  const t = babelcore.types;
-  const header = t.objectProperty(
-    t.identifier('header'),
-    buildMarkdownHeaderObjAST(markdown));
-  const body = t.objectProperty(
-    t.identifier('content'),
-    buildMarkdownContentObjAst(markdown)
-  );
-
-  return t.objectExpression([header, body]);
+  return template.expression`
+    {
+      header: HEADER,
+      content: CONTENT,
+    }
+  `({
+    HEADER: buildMarkdownHeaderObjAST(markdown),
+    CONTENT: buildMarkdownContentStringAst(markdown),
+  });
 }
 
-export function buildMarkdownContentObjAst(markdown: MarkdownRaw) {
+export function buildMarkdownContentStringAst(markdown: MarkdownRaw) {
   const t = babelcore.types;
-  const contentProperty = t.objectProperty(
-    t.identifier("content"), t.stringLiteral(markdown.content));
-
-  return t.objectExpression([contentProperty]);
+  return t.stringLiteral(markdown.content);
 }
 
 export function buildMarkdownHeaderObjAST(markdown: MarkdownRaw) {
   const t = babelcore.types;
-  const titleProperty = t.objectProperty(
-    t.identifier("title"),
-    t.stringLiteral(markdown.header.title));
-  const tagProperty = t.objectProperty(
-    t.identifier("tag"),
-    t.arrayExpression(markdown.header.tag?.map(e => t.stringLiteral(e))));
-  const sourceProperty = t.objectProperty(
-    t.identifier("source"),
-    t.arrayExpression(markdown.header.source?.map(e => t.stringLiteral(e))));
-  const timeProperty = t.objectProperty(
-    t.identifier("time"),
-    t.newExpression(
-      t.identifier("Date"),
-      [t.stringLiteral(markdown.header.time.toJSON())]));
-  const idProperty = t.objectProperty(
-    t.identifier("id"),
-    t.numericLiteral(markdown.header.id));
-  return t.objectExpression([
-    titleProperty, tagProperty, sourceProperty, timeProperty,
-    idProperty,
-  ]);
+  const {header, } = markdown;
+  const {title, time, tag, source, id} = header;
+  return template.expression`
+    {
+      title: ${title},
+      tag: TAG,
+      source: SOURCE,
+      time: new Date(${time.toJSON()}),
+      id: ID,
+    }
+  `({
+    TAG: t.arrayExpression(tag?.map(e => t.stringLiteral(e))),
+    SOURCE: t.arrayExpression(source?.map(e => t.stringLiteral(e))),
+    ID: t.numericLiteral(id)
+  });
 }
 
 //  new Map([s1, [m.get(1), m.get(2)], s2, [m.get(4), m.get(9), m.get(12)] ...])
@@ -139,6 +128,15 @@ export function getTimeIdMap(headers: Array<MarkdownHeader>): Array<[string, Arr
   }
 }
 
+// {tag: ..., time: ...}
+export function buildIndexObjAST(tag: string, time: string) {
+  return template.expression.ast`
+    {
+      tag: ${tag},
+      time: ${time},
+    }
+  `;
+}
 namespace Util_ {
   // build tuple of key and all markdowns it refers to.
   export const buildval =
@@ -168,19 +166,4 @@ namespace Util_ {
           markdowns.filter(f).map(m => m.id),
         ];
       }
-}
-
-// {tag: ..., time: ...}
-export function buildIndexObjAST(tag: string, time: string) {
-  const t = babelcore.types;
-  const tagProperty = t.objectProperty(
-    t.identifier("tag"),
-    t.identifier(tag)
-  );
-
-  const timeProperty = t.objectProperty(
-    t.identifier("time"),
-    t.identifier(time)
-  );
-  return t.objectExpression([tagProperty, timeProperty]);
 }
