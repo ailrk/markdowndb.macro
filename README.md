@@ -51,7 +51,7 @@ import markdowndb, {
 } from 'markdowndb.macro';
 
 // runtime mode will be used by default.
-const md: MarkdownRuntimeDatabase = markdowndb('articles');
+const md: MarkdownRuntimeDatabase = markdowndb('articles', 'runtime');
 
 // "default" mode, query by id
 const md1: Markdown = db.get(12341);
