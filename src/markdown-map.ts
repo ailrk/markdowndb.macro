@@ -103,10 +103,10 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
   fetchStatic: ((id: number) => Promise<Markdown>) | undefined;
 
   public constructor(
-    other: {url: string, headers: Map<number, MarkdownHeader>},
+    other: {url: string, map: Map<number, MarkdownHeader>},
     indices: Record<IndexType, Map<string, Array<MarkdownHeader>>>) {
     super();
-    const {url, headers} = other;
+    const {url, map} = other;
     const f: ToMarkdown<MarkdownHeader> = val => {
       return {
         header: val,
@@ -114,7 +114,7 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
       };
     };
     this.defaultMap = new Map(
-      Array.from(headers)
+      Array.from(map)
         .map(e => {
           const [id, header] = e;
           const md: Markdown = f(header);

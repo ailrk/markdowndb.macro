@@ -6,7 +6,7 @@
   "type": "dist/index.d.ts",
   "homepage": "https://github.com/jummy233/markdowndb.macro",
   "scripts": {
-    "test": "npm run build && jest --cache",
+    "test": "npm run build && jest",
     "build": "rimraf dist && tsc"
   },
   "keywords": [

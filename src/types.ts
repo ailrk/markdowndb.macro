@@ -1,4 +1,4 @@
-export {MarkdownDatabase, MarkdownStaticDatabase, MarkdownRuntimeDatabase} from './MarkdownMap';
+export {MarkdownDatabase, MarkdownStaticDatabase, MarkdownRuntimeDatabase} from './markdown-map';
 // Structure of the markdown header.
 export interface MarkdownHeader {
   readonly title: string,

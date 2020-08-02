@@ -2,7 +2,7 @@ import {MarkdownRaw, MarkdownHeader} from '../types';
 import template from '@babel/template';
 import * as babelcore from '@babel/core';
 import {Expression, ArrayExpression, BlockStatement} from '@babel/types';
-import {flat} from '../utils';
+import {flat} from '../utils/flat';
 
 
 // AST for an instant call of arrow function.

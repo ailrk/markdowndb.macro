@@ -7,5 +7,5 @@ export {
   MarkdownDBMode,
   MarkdownDatabase,
   MarkdownStaticDatabase,
-  MarkdownRuntimeDatabase
+  MarkdownRuntimeDatabase,
 } from './types';

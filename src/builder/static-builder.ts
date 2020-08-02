@@ -10,10 +10,8 @@ import {
   buildIndexObjAST,
   getTagIdMap,
   getTimeIdMap,
-} from './astbuilder';
+} from './ast-builder';
 import * as babelcore from '@babel/core';
-import path from 'path';
-import fs from 'fs';
 import {MarkdownRaw} from 'src/types';
 
 // top level AST Builder from static mode.
@@ -28,7 +26,7 @@ export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>) {
   const tagIdex = assignBuilder('tagIdex', t.newExpression(t.identifier('Map'), []));
   const timeIndex = assignBuilder('timeIndex', t.newExpression(t.identifier('Map'), []));
   const staticObj = assignBuilder('staticObj', markdownStaticObjBuilder(url, 'defaultMap'));
-  const mmap = assignBuilder('mmap', staticMarkdownDatabaseBuilder('defaultMap', 'tagIdex', 'timeIndex'));
+  const mmap = assignBuilder('mmap', staticMarkdownDatabaseBuilder('staticObj', 'tagIdex', 'timeIndex'));
   const returnStatement = t.returnStatement(t.identifier('mmap'));
   {
     const scoped = scopeBuilder(
@@ -58,18 +56,19 @@ function staticMarkdownDatabaseBuilder(main: string, tag: string, time: string) 
 
 // { url: string, map: Map<number, MarkdownHeader>}
 function markdownStaticObjBuilder(url: string, headers: string) {
-  const tp = template.expression.ast`{ url: ${url}, map: ${headers} }`;
+  const tp = template.expression.ast`{ url: "${url}", map: ${headers} }`;
   return tp;
 }
 
 // Map<number, MarkdownHeader>
 function markdownHeaderMapBuilder(markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
-  const pair = (m: MarkdownRaw) => template.expression`[ID, MARKDOWN_HEADER_OBJ]`
-    ({
-      ID: m.header.id,
-      MARKDOWN_HEADER_OBJ: buildMarkdownHeaderObjAST(m),
-    });
+  const pair = (m: MarkdownRaw) =>
+    template.expression`[ID, MARKDOWN_HEADER_OBJ]`
+      ({
+        ID: t.numericLiteral(m.header.id),
+        MARKDOWN_HEADER_OBJ: buildMarkdownHeaderObjAST(m),
+      });
 
   const mdExpr = markdowns.map(pair);
   const mdarryExprs = t.arrayExpression(mdExpr);
@@ -98,18 +97,4 @@ export function timeIndexBlockBuilder(to: string, from: string, markdowns: Array
     return t.expressionStatement(setMapBuilder(to, time, markdownArrayBuilder(from, ids)))
   });
   return t.blockStatement(block);
-}
-
-namespace Files {
-  // parse markdowns into html to pubDir
-  export function toPublic(markdowns: Array<MarkdownRaw>, pubDir: string, url?: string) {
-    const makeFile = (markdown: MarkdownRaw) => {
-      const p = path.join(
-        url ?? "",
-        path.resolve(pubDir),
-        markdown.header.id.toString() + '.html');
-      fs.writeFileSync(p, markdown.content);
-    }
-    markdowns.forEach(m => {makeFile(m);});
-  }
 }

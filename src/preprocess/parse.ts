@@ -5,7 +5,7 @@ import MardownIt from 'markdown-it';
 import MarkdownItMath from 'markdown-it-math';
 import * as HLJS from 'highlightjs';
 import * as textzilla from 'texzilla';
-import {fnv1a} from './hash';
+import {fnv1a} from '../utils/hash';
 import {MarkdownRaw} from '../types';
 
 // parse the whole directory.
