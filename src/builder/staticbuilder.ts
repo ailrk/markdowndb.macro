@@ -1,6 +1,5 @@
 // module for generating static articles.
 
-import {CallExpression} from '@babel/types';
 import template from '@babel/template';
 import {
   scopeBuilder,
@@ -23,7 +22,7 @@ import {MarkdownRaw} from 'src/types';
 // 2. declare b, c :: Map<string, MarkdownHeader>
 // 3. mmap = MarkdownStaticDatabase(a, {time, a, tag: b})
 // 4. return mmap.
-export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>): CallExpression {
+export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>) {
   const t = babelcore.types;
   const defaultMap = assignBuilder('defaultMap', markdownHeaderMapBuilder(markdowns));
   const tagIdex = assignBuilder('tagIdex', t.newExpression(t.identifier('Map'), []));

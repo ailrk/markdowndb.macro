@@ -84,10 +84,10 @@ export function buildMarkdownHeaderObjAST(markdown: MarkdownRaw) {
   const {title, time, tag, source, id} = header;
   return template.expression`
     {
-      title: ${title},
+      title: "${title}",
       tag: TAG,
       source: SOURCE,
-      time: new Date(${time.toJSON()}),
+      time: new Date("${time.toJSON()}"),
       id: ID,
     }
   `({

@@ -1,6 +1,7 @@
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as Builder from './builder/builder';
+import {MarkdownDBMode} from './types';
 
 export default createMacro(markdowndbMacros);
 
@@ -25,10 +26,9 @@ const requiremarkdowndb = ({referencePath, state, babel}:
     throw new Error(`babel filename doesn't exist`);
   }
 
-  const markdownDir: string | undefined =
-    (callExpressionPath.get("arguments") as Array<NodePath<Node>>)[0]
-      .evaluate()
-      .value;
+  const args = callExpressionPath.get("arguments") as Array<NodePath<Node>>
+  const markdownDir: string | undefined = args[0]?.evaluate()?.value;
+  const mode: MarkdownDBMode | undefined = args[1]?.evaluate()?.value;
 
   if (markdownDir === undefined) {
     throw new Error(`There is a problem evaluating the argument `
@@ -36,9 +36,19 @@ const requiremarkdowndb = ({referencePath, state, babel}:
       + ` Please make sure the value is known at compile time`);
   }
 
-  const content = Builder.build(markdownDir, "runtime");
+  const content = (() => {
+    switch (mode) {
+      case "static":
+        return Builder.build(markdownDir, "static");
+      case "runtime":
+        return Builder.build(markdownDir, "runtime");
+      case undefined:
+        return Builder.build(markdownDir, "runtime");
+      // new mode might be added later.
+      default:
+        throw new Error(`unknown mode {mode}`);
+    }
+  })();
 
-  //const markdownarray = Parse.makeMarkdownDB(path.resolve(markdownDir));
-  //const content = ASTBuilder.buildMarkdownDBAST(markdownarray);
   referencePath.parentPath.replaceWith(t.expressionStatement(content));
 };

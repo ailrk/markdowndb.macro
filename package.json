@@ -6,7 +6,7 @@
   "type": "dist/index.d.ts",
   "homepage": "https://github.com/jummy233/markdowndb.macro",
   "scripts": {
-    "test": "npm run build && jest --no-cache",
+    "test": "npm run build && jest --cache",
     "build": "rimraf dist && tsc"
   },
   "keywords": [
@@ -29,6 +29,7 @@
     "@types/node": "^14.0.27",
     "babel-plugin-macros": "^2.8.0",
     "jest": "^26.2.0",
+    "regenerator-runtime": "^0.13.7",
     "typescript": "^3.9.7"
   },
   "dependencies": {
