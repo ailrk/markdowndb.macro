@@ -5,6 +5,7 @@ export {
   MarkdownRuntimeDatabase,
 } from './markdown-map';
 export {
+  ViewType,
   Markdown,
   MarkdownText,
   MarkdownHeader,
