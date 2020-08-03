@@ -12,7 +12,7 @@ function markdowndbMacros({references, state, babel}: MacroParams) {
     if (referencePath.parentPath.type == "CallExpression") {
       requiremarkdowndb({referencePath, state, babel});
     } else {
-      throw new Error(`This is not supported ` +
+      throw new Error(`This is not supported` +
         `${referencePath.findParent(babel.types.isExpression).getSource()}`);
     }
   });
@@ -31,17 +31,25 @@ const requiremarkdowndb = ({referencePath, state, babel}:
   const args = callExpressionPath.get("arguments") as Array<NodePath<Node>>
   const markdownDir: string | undefined = args[0]?.evaluate()?.value;
   const mode: MarkdownDBMode | undefined = args[1]?.evaluate()?.value;
+  const publicURL: string | undefined = args[2]?.evaluate()?.value;
 
-  if (markdownDir === undefined) {
-    throw new Error(`There is a problem evaluating the argument `
-      + `${callExpressionPath.getSource()}.`
-      + ` Please make sure the value is known at compile time`);
+  {
+    // sanity check
+    if (markdownDir === undefined) {
+      throw new Error(`There is a problem evaluating the argument `
+        + `${callExpressionPath.getSource()}.`
+        + ` Please make sure the value is known at compile time`);
+    }
+
+    if (publicURL === undefined && mode === "static") {
+      throw new Error(`static mode must has public URL. For instance, if you are using create-react-app try pass process.env.PUBLIC_URL as the third parameter`);
+    }
   }
 
   const content = (() => {
     switch (mode) {
       case "static":
-        return Builder.build(markdownDir, "static");
+        return Builder.build(markdownDir, "static", publicURL);
       case "runtime":
         return Builder.build(markdownDir, "runtime");
       case undefined:

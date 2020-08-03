@@ -20,12 +20,12 @@ import {MarkdownRaw} from 'src/types';
 // 2. declare b, c :: Map<string, MarkdownHeader>
 // 3. mmap = MarkdownStaticDatabase(a, {time, a, tag: b})
 // 4. return mmap.
-export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>) {
+export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>, publicUrl: string) {
   const t = babelcore.types;
   const defaultMap = assignBuilder('defaultMap', markdownHeaderMapBuilder(markdowns));
   const tagIdex = assignBuilder('tagIdex', t.newExpression(t.identifier('Map'), []));
   const timeIndex = assignBuilder('timeIndex', t.newExpression(t.identifier('Map'), []));
-  const staticObj = assignBuilder('staticObj', markdownStaticObjBuilder(url, 'defaultMap'));
+  const staticObj = assignBuilder('staticObj', markdownStaticObjBuilder(url, publicUrl, 'defaultMap'));
   const mmap = assignBuilder('mmap', staticMarkdownDatabaseBuilder('staticObj', 'tagIdex', 'timeIndex'));
   const returnStatement = t.returnStatement(t.identifier('mmap'));
   {
@@ -55,8 +55,12 @@ function staticMarkdownDatabaseBuilder(main: string, tag: string, time: string) 
 }
 
 // { url: string, map: Map<number, MarkdownHeader>}
-function markdownStaticObjBuilder(url: string, headers: string) {
-  const tp = template.expression.ast`{ url: "${url}", map: ${headers} }`;
+function markdownStaticObjBuilder(url: string, publicUrl: string, headers: string) {
+  const tp = template.expression.ast`{
+    url: "${url}",
+    publicUrl: "${publicUrl}",
+    map: ${headers}
+  }`;
   return tp;
 }
 

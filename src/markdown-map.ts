@@ -1,5 +1,5 @@
 import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownText} from './types';
-import {pubDirURL, htmlPath} from './preprocess/static-gen';
+import {htmlPath} from './preprocess/static-gen';
 
 export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
@@ -102,14 +102,15 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
   fetchStatic: ((id: number) => Promise<Markdown>) | undefined;
 
   public constructor(
-    other: {url: string, map: Map<number, MarkdownHeader>},
+    // TODO public url
+    other: {url: string, publicUrl: string, map: Map<number, MarkdownHeader>},
     indices: Record<ViewType, Map<string, Array<MarkdownHeader>>>) {
     super();
-    const {url, map} = other;
+    const {url, publicUrl, map} = other;
     const f: ToMarkdown<MarkdownHeader> = val => (
       {
         header: val,
-        content: fetchStatic(url)(val.id),
+        content: fetchStatic(publicUrl)(url)(val.id),
       }
     );
     this.defaultMap = new Map(
@@ -136,11 +137,12 @@ export function promisify<K, T>(map: Map<K, Array<T>>, f: ToMarkdown<T>) {
   return new Map(array);
 }
 
-const fetchStatic = (url: string) => async (id: number): Promise<MarkdownText> => {
-  // TODO can be mor generic
-  const purl = pubDirURL("home", url);
-  const addr = htmlPath(purl, id.toString());
-  console.log(addr);
-  const data = await fetch(addr);
-  return await data.text();
-}
+const fetchStatic = (publicUrl: string) =>
+  (url: string) =>
+    async (id: number): Promise<MarkdownText> => {
+      const purl = `${publicUrl}/${url}`;
+      const addr = htmlPath(purl, id.toString());
+      console.log(addr);
+      const data = await fetch(addr);
+      return await data.text();
+    }

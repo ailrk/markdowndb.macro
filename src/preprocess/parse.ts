@@ -30,7 +30,7 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
   const txt =
     fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
 
-  const headers = txt[0].split("--").filter(e => e !== '');
+  const headers = txt[0].split("-- ").filter(e => e !== '');
   const content = mdToHtml(txt[1]);
 
   let tag: Array<string> | undefined;
@@ -39,7 +39,6 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
   let title: string | undefined;
 
   for (const line of headers) {
-    console.log(line);
     const tokens = line.trim().split(" ");
     switch (tokens[0]) {
       // tag and source can be empty
@@ -49,6 +48,8 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
         break
       case "source":
         if (tokens.length == 1) break
+        console.log('source');
+        console.log(tokens);
         source = tokens.slice(1);
         break
       // all articles must have a titile and a date.
