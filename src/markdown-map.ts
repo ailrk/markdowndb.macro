@@ -1,77 +1,76 @@
-import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, IndexType, MarkdownText} from './types';
+import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownText} from './types';
+import {pubDirURL, htmlPath} from './preprocess/static-gen';
 
 export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
   // it encloses the url it will fetch from.
   defaultMap?: Map<number, Markdown>;
-  indexTagMap?: Map<string, Array<Markdown>>;
-  indexTimeMap?: Map<string, Array<Markdown>>;
+  tagView?: Map<string, Array<Markdown>>;
+  timeView?: Map<string, Array<Markdown>>;
 
   get(key: number): Markdown | undefined;
   get(key: Date | string): Array<Markdown> | undefined;
   get(key: Date | number | string):
     | (Markdown | undefined)
     | (Array<Markdown> | undefined) {
-    if (typeof key === "number") {
-      return this.defaultMap?.get(key);
+    switch (typeof key) {
+      case "number":
+        return this.defaultMap?.get(key);
+      case "string":
+        return this.tagView?.get(key);
     }
-    if (typeof key === "string") {
-      return this.indexTagMap?.get(key);
-    }
-    return this.indexTimeMap?.get(key.toJSON());
+    return this.timeView?.get(key.toJSON());
   }
 
-  entries(indexType: "default"): IterableIterator<[number, Markdown]> | undefined;
-  entries(indexType: "time" | "tag"):
+  entries(view: "default"): IterableIterator<[number, Markdown]> | undefined;
+  entries(view: "time" | "tag"):
     IterableIterator<[string, Array<Markdown>]> | undefined;
-  entries(indexType: IndexType):
+  entries(view: ViewType):
     | IterableIterator<[number, Markdown]>
     | IterableIterator<[string, Array<Markdown>]>
     | undefined {
-    if (indexType === "default") {
-      return this.defaultMap?.entries();
-    }
-    if (indexType === "time") {
-      return this.indexTimeMap?.entries();
-    }
-    if (indexType === "tag") {
-      return this.indexTagMap?.entries();
+    switch (view) {
+      case "default":
+        return this.defaultMap?.entries();
+      case "time":
+        return this.timeView?.entries();
+      case "tag":
+        return this.tagView?.entries();
     }
   }
 
-  values(indexType: "default"): IterableIterator<Markdown> | undefined;
-  values(indexType: "time" | "tag"):
+  values(view: "default"): IterableIterator<Markdown> | undefined;
+  values(view: "time" | "tag"):
     IterableIterator<Array<Markdown>> | undefined;
-  values(indexType: IndexType):
+  values(view: ViewType):
     | IterableIterator<Markdown>
     | IterableIterator<Array<Markdown>>
     | undefined {
-    if (indexType === "default") {
-      return this.defaultMap?.values();
-    }
-    if (indexType === "time") {
-      return this.indexTimeMap?.values();
-    }
-    if (indexType === "tag") {
-      return this.indexTagMap?.values();
+    switch (view) {
+      case "default":
+        return this.defaultMap?.values();
+      case "time":
+        return this.timeView?.values();
+      case "tag":
+        return this.tagView?.values();
     }
   }
 
-  keys(indexType: "default"): IterableIterator<number> | undefined;
-  keys(indexType: "time" | "tag"):
+  keys(view: "default"): IterableIterator<number> | undefined;
+  keys(view: "time" | "tag"):
     IterableIterator<string> | undefined;
-  keys(indexType: IndexType):
+  keys(view: ViewType):
     | IterableIterator<number>
     | IterableIterator<string>
     | undefined {
-    if (indexType === "default") {
+    if (view === "default") {
       return this.defaultMap?.keys();
     }
-    if (indexType === "time") {
-      return this.indexTimeMap?.keys();
+    if (view === "time") {
+      return this.timeView?.keys();
     }
-    if (indexType === "tag") {
-      return this.indexTagMap?.keys();
+    if (view === "tag") {
+      return this.tagView?.keys();
     }
   }
 }
@@ -79,14 +78,14 @@ export class MarkdownDatabase implements MarkdownDB {
 export class MarkdownRuntimeDatabase extends MarkdownDatabase {
   public constructor(
     other: Map<number, MarkdownRaw>,
-    indices: Record<IndexType, Map<string, Array<MarkdownRaw>>>) {
+    indices: Record<ViewType, Map<string, Array<MarkdownRaw>>>) {
     super();
-    const f: ToMarkdown<MarkdownRaw> = val => {
-      return {
+    const f: ToMarkdown<MarkdownRaw> = val => (
+      {
         header: val.header,
         content: Promise.resolve(val.content),
-      };
-    };
+      }
+    );
     this.defaultMap = new Map(
       Array.from(other)
         .map(e => {
@@ -94,8 +93,8 @@ export class MarkdownRuntimeDatabase extends MarkdownDatabase {
           return [id, f(raw)] as [number, Markdown];
         })
     );
-    this.indexTagMap = promisify(indices.tag, f);
-    this.indexTimeMap = promisify(indices.time, f);
+    this.tagView = promisify(indices.tag, f);
+    this.timeView = promisify(indices.time, f);
   }
 }
 
@@ -104,15 +103,15 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
 
   public constructor(
     other: {url: string, map: Map<number, MarkdownHeader>},
-    indices: Record<IndexType, Map<string, Array<MarkdownHeader>>>) {
+    indices: Record<ViewType, Map<string, Array<MarkdownHeader>>>) {
     super();
     const {url, map} = other;
-    const f: ToMarkdown<MarkdownHeader> = val => {
-      return {
+    const f: ToMarkdown<MarkdownHeader> = val => (
+      {
         header: val,
         content: fetchStatic(url)(val.id),
-      };
-    };
+      }
+    );
     this.defaultMap = new Map(
       Array.from(map)
         .map(e => {
@@ -121,23 +120,27 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
           return [id, md] as [number, Markdown];
         })
     );
-    this.indexTagMap = promisify(indices.tag, f);
-    this.indexTimeMap = promisify(indices.time, f);
+    this.tagView = promisify(indices.tag, f);
+    this.timeView = promisify(indices.time, f);
   }
 }
 
 type ToMarkdown<T> = (val: T) => Markdown;
 export function promisify<K, T>(map: Map<K, Array<T>>, f: ToMarkdown<T>) {
-  const array =
-    Array.from(map)
-      .map(e => {
-        const [k, v] = e;
-        const v1 = v.map(f);
-        return [k, v1] as [K, Array<Markdown>];
-      });
+  const array = Array.from(map)
+    .map(e => {
+      const [k, v] = e;
+      const v1 = v.map(f);
+      return [k, v1] as [K, Array<Markdown>];
+    });
   return new Map(array);
 }
 
-const fetchStatic = (url: string) => (id: number): Promise<MarkdownText> =>
-  fetch(`${url}/${id}`)
-    .then(data => data.text());
+const fetchStatic = (url: string) => async (id: number): Promise<MarkdownText> => {
+  // TODO can be mor generic
+  const purl = pubDirURL("home", url);
+  const addr = htmlPath(purl, id.toString());
+  console.log(addr);
+  const data = await fetch(addr);
+  return await data.text();
+}

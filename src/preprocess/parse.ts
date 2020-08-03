@@ -20,7 +20,7 @@ export function makeMarkdownDB(dirname: string): Array<MarkdownRaw> {
     const dups = checkdup(markdownarray);
     if (dups.length !== 0) {
       throw new Error(`Some article titles collide in their hash. please change title` +
-        ` of these articles ${dups}`);
+        ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`);
     }
   }
   return markdownarray;
@@ -39,30 +39,27 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
   let title: string | undefined;
 
   for (const line of headers) {
+    console.log(line);
     const tokens = line.trim().split(" ");
     switch (tokens[0]) {
-
       // tag and source can be empty
       case "tag":
         if (tokens.length == 1) break
         tag = tokens.slice(1);
         break
-
       case "source":
         if (tokens.length == 1) break
         source = tokens.slice(1);
         break
-
       // all articles must have a titile and a date.
       case "date":
       case "time":
         try {
           time = new Date(tokens[1]);
         } catch (err) {
-          throw Error(`date ${tokens[1]} format is not correct`);
+          throw new Error(`date ${tokens[1]} format is not correct. from file ${filename}`);
         }
         break
-
       case "title":
         try {
           if (tokens.length >= 2)
@@ -76,7 +73,7 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
         }
         break
       default:
-        throw Error("Incorrect markdown header format.");
+        throw Error(`Incorrect markdown header format. from file ${filename}. get token ${tokens[0]}`);
     }
   }
   return {
@@ -86,7 +83,7 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
       tag,
       source,
       time: (time as Date),
-      id: fnv1a((title as string)),
+      id: fnv1a((title as string) + time?.toJSON()),
     },
     content
   };
@@ -113,6 +110,5 @@ function mdToHtml(md: string): string {
 }
 
 function checkdup(markdowns: Array<MarkdownRaw>) {
-  const ids = ((arr: Array<MarkdownRaw>) => arr.map(m => m.header.id))(markdowns);
-  return ids.filter((id, idx) => ids.indexOf(id) !== idx);
+  return markdowns.filter((m, idx) => markdowns.indexOf(m) !== idx);
 }

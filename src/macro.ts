@@ -1,8 +1,10 @@
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as Builder from './builder/builder';
-import {MarkdownDBMode} from './types';
+import {MarkdownDBMode, MarkdownDB} from './types';
 
+type CreateMarkdownDB = (dir: string, mode: MarkdownDBMode) => MarkdownDB;
+export declare const createMarkdownDB: CreateMarkdownDB;
 export default createMacro(markdowndbMacros);
 
 function markdowndbMacros({references, state, babel}: MacroParams) {

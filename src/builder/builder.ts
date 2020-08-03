@@ -19,4 +19,3 @@ export function build(mdpath: string, mode: MarkdownDBMode): Expression {
       throw new Error("unknown build mode. Either static or runtime");
   }
 }
-

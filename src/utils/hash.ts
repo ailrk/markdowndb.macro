@@ -1,7 +1,7 @@
-const FNV_PRIMES = {
-  32: BigInt(16777619),
-  64: BigInt(16777619),
-};
+// const FNV_PRIMES = {
+//   32: BigInt(16777619),
+//   64: BigInt(16777619),
+// };
 
 const FNV_SEEDS = {
   32: BigInt(2166136261),

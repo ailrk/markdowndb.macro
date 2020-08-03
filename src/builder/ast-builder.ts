@@ -60,7 +60,6 @@ export function markdownMapBuilder(markdowns: Array<MarkdownRaw>) {
   return t.newExpression(t.identifier('Map'), [mdarryExprs]);
 }
 
-
 export function buildMarkdownObjAST(markdown: MarkdownRaw) {
   return template.expression`
     {

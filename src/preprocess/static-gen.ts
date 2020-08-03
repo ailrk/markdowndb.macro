@@ -8,12 +8,16 @@ export function toPublic(markdowns: Array<MarkdownRaw>, pubDir: string, url?: st
   const purl = pubDirURL(pubDir, url);
   if (!fs.existsSync(purl)) fs.mkdirSync(purl);
   markdowns.forEach(({header, content}: MarkdownRaw) => {
-    const p = path.join(purl, header.id.toString() + '.html');
+    const p = htmlPath(purl, header.id.toString());
     fs.writeFileSync(p, content);
   });
 }
 
-function pubDirURL(pubDir: string, url?: string) {
+export function pubDirURL(pubDir: string, url?: string) {
   return path.join(path.resolve(pubDir), url ?? "");
+}
+
+export function htmlPath(purl: string, id: string) {
+  return path.join(purl, id + '.html');
 }
 

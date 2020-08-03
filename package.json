@@ -7,7 +7,8 @@
   "homepage": "https://github.com/jummy233/markdowndb.macro",
   "scripts": {
     "test": "npm run build && jest",
-    "build": "rimraf dist && tsc"
+    "build": "rimraf dist && tsc",
+    "relink": "sudo npm link"
   },
   "keywords": [
     "static cite",
