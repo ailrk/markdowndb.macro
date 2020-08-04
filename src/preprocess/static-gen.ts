@@ -7,6 +7,9 @@ import fs from 'fs';
 export function toPublic(markdowns: Array<MarkdownRaw>, pubDir: string, url?: string) {
   const purl = pubDirURL(pubDir, url);
   if (!fs.existsSync(purl)) fs.mkdirSync(purl);
+  fs.readdirSync(purl).forEach(filename => {
+    fs.unlinkSync(path.join(path.resolve(purl), filename));
+  });
   markdowns.forEach(({header, content}: MarkdownRaw) => {
     const p = htmlPath(purl, header.id.toString());
     fs.writeFileSync(p, content);

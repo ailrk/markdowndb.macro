@@ -2,9 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import MardownIt from 'markdown-it';
-import MarkdownItMath from 'markdown-it-math';
 import * as HLJS from 'highlightjs';
-import * as textzilla from 'texzilla';
 import {fnv1a} from '../utils/hash';
 import {MarkdownRaw} from '../types';
 
@@ -48,9 +46,7 @@ export function parseMarkdown(filename: string): MarkdownRaw | undefined {
         break
       case "source":
         if (tokens.length == 1) break
-        console.log('source');
-        console.log(tokens);
-        source = tokens.slice(1);
+        source = tokens.slice(1).filter(e => e !== '').map(m => m.trim());
         break
       // all articles must have a titile and a date.
       case "date":
@@ -103,9 +99,6 @@ function mdToHtml(md: string): string {
       }
       return str;
     }
-  }).use(MarkdownItMath, {
-    inlineRenderer: (str: string) => textzilla.toMathMLString(str),
-    blockRenderer: (str: string) => textzilla.toMathMLString(str, true),
   });
   return rmd.render(md);
 }
