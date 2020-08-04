@@ -31,7 +31,7 @@ const requiremarkdowndb = ({referencePath, state, babel}:
   const args = callExpressionPath.get("arguments") as Array<NodePath<Node>>
   const markdownDir: string | undefined = args[0]?.evaluate()?.value;
   const mode: MarkdownDBMode | undefined = args[1]?.evaluate()?.value;
-  const publicURL: string | undefined = args[2]?.evaluate()?.value;
+  const publicURL: string | undefined = args[2]?.evaluate()?.value ?? "/";
 
   {
     // sanity check
@@ -39,10 +39,6 @@ const requiremarkdowndb = ({referencePath, state, babel}:
       throw new Error(`There is a problem evaluating the argument `
         + `${callExpressionPath.getSource()}.`
         + ` Please make sure the value is known at compile time`);
-    }
-
-    if (publicURL === undefined && mode === "static") {
-      throw new Error(`static mode must has public URL. For instance, if you are using create-react-app try pass process.env.PUBLIC_URL as the third parameter`);
     }
   }
 

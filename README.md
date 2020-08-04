@@ -4,7 +4,7 @@
 A babel macro for building markdown Map at compile time for static website.
 
 ### Motivation
-I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my already chaotic project config even more complicated. With `babel-plugin-macros` I can just load all markdowns into a database like object with one function call.
+I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my already chaotic project config even more complicated. With `babel-plugin-macros` I can have an Map-like interface to access all markdowns with one function call.
 
 ### Install
 `npm install markdowndb.macro`
@@ -27,8 +27,13 @@ Each markdown has its own metadata upfront. Write your article in this format:
 ### How to use
 ##### runtime mode and static mode
 There are two modes to build a markdown db -- `runtime mode` and `static mode`.
-In `runtime mode` all markdowns are sent to the client in the first connection; In `static mode` only header information is sent, markdown content will be wrapped in a promise and resolve when needed.
+In `runtime mode`, all markdowns are packed into the final app and are transferred upon the first request. Runtime mode has very fast response time once all data is loaded, but it will make inital load time much longer. In addition, `runtime mode` will load all markdowns in client side even if they are not used, which can cause inefficient memory usage.
+In `static mode` markdown files are host on the static server, and header of markdown will be accessable after the first load. The markdown files are lazily evaluated: requests are only sent when it is accessed via the interface.
 
+##### Views of markdown db
+There are three views of markdowns: `default`, `tag`, and `time`. In `default` view each markdown is indexed by id; in tag and time mode an array of markdowns are indexed by their corresponding tags or date.
+
+##### Demo
 Assume you have this directory hierachy:
 ```
 articles/
@@ -38,10 +43,7 @@ src/
 ```
 where `articles` is where you put all your markdowns.
 
-##### Views of markdown db
-There are three views of markdowns: `default`, `tag`, and `time`. In `default` view each markdown is indexed by id; in tag and time mode an array of markdowns are indexed by their corresponding tags or date.
 
-##### Demo
 ```typescript
 // you need to make sure constructors of MarkdownRuntimeDatabase
 // and MarkdownStaticDatabase are avaibale in the scope because they will
@@ -50,15 +52,15 @@ import {
   MarkdownRuntimeDatabase,
   MarkdownStaticDatabase,
 } from 'markdowndb.macro/dist/markdown-map';
+
 import markdowndb, { Markdown } from 'markdowndb.macro';
 
 // Public url of your app. It must be a string literal.
-const publicURL: string = "home":
+const publicURL: string = "/home":
 
 // create dbs in different modes.
 const mdruntime: MarkdownDB = markdowndb('folder1', 'runtime');
 const mdstatic: MarkdownDB = markdowndb('foler2', 'static', publicURL);
-
 
 // "default" mode, query by id
 const md1: Markdown = db.get(12341);
@@ -81,8 +83,12 @@ const db_times = Array.from(db.keys("time")).map(e => new Date(e));
 
 export {Markdown, MarkdownDB} from 'markdowndb.macro';
 ```
-Note because the type is exposed at compile time, you need to re-export types you want to use at runtime. This is not ideal and if you have a better solution please open a RP.
 
+##### Notes
+- Note because the type is exposed at compile time, you need to re-export types you want to use at runtime. This is not ideal and if you have a better solution please open a RP.
+- If you want to use the type without importing macro you need to import `markdowndb.macro/dist/types`;
+- When you are defining your `MarkdownDB` You need to have `MarkdownRuntimeDatabase` and `MarkdownStaticDatabase` avaliable in the same module. Import from `markdowndb.macro/dist/markdown-map`.
+- If you are using `static mode`, notice that the argument for `publicURL` should be a string literal started with a slash `/`;
 
 ##### interfaces
 You can query `markdowns` based on following type:
@@ -104,20 +110,19 @@ export interface Markdown {
 
 // Both MarkdownRuntimeDatabase and MarkdownStaticDatabase implement this interface.
 export interface MarkdownDB {
+  // get by id
   get(key: number): Markdown | undefined,
+  // get by time or tag.
   get(key: Date | string): Array<Markdown> | undefined,
 
-  entries(indexType: "default"): IterableIterator<[number, Markdown]> | undefined,
-  entries(indexType: "time" | "tag"):
-    IterableIterator<[string, Array<Markdown>]> | undefined,
+  entries(view: "default"): Array<[number, Markdown]> | undefined,
+  entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined,
 
-  values(indexType: "default"): IterableIterator<Markdown> | undefined,
-  values(indexType: "time" | "tag"):
-    IterableIterator<Array<Markdown>> | undefined,
+  values(view: "default"): Array<Markdown> | undefined,
+  values(view: "time" | "tag"): Array<Array<Markdown>> | undefined,
 
-  keys(indexType: "default"): IterableIterator<number> | undefined,
-  keys(indexType: "time" | "tag"):
-    IterableIterator<string> | undefined,
+  keys(view: "default"): Array<number> | undefined,
+  keys(view: "time" | "tag"): Array<string> | undefined,
 }
 ```
 id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible. Notice because datetime is not hashable, to access markdowns via `indexTime` you need to convert the datetime into string by invoking `Date.toJSON()` method.

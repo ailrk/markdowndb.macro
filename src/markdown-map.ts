@@ -22,71 +22,49 @@ export class MarkdownDatabase implements MarkdownDB {
 
   entries(view: "default"): Array<[number, Markdown]> | undefined;
   entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined;
-  entries(view: ViewType): | Array<[number, Markdown]> | Array<[string, Array<Markdown>]> | undefined {
+  entries(view: ViewType):
+    | Array<[number, Markdown]>
+    | Array<[string, Array<Markdown>]>
+    | undefined {
     switch (view) {
       case "default":
-        return forwardIter<[number, MarkdownMeta], [number, Markdown]>
-          (this.defaultMap?.entries())
-          (([id, m]) => [id, resolveMeta_(m)]);
+        return forwardIter(this.defaultMap?.entries(),
+          ([id, meta]) => [id, resolveMeta_(meta)]);
       case "time":
-        return forwardIter
-          <[string, Array<MarkdownMeta>], [string, Array<Markdown>]>
-          (this.timeView?.entries())
-          (([time, m]) => [time, m.map(resolveMeta_)]);
-      case "tag": {
-        return forwardIter
-          <[string, Array<MarkdownMeta>], [string, Array<Markdown>]>
-          (this.tagView?.entries())
-          (([tag, m]) => [tag, m.map(resolveMeta_)]);
-      }
+        return forwardIter(this.timeView?.entries(),
+          ([id, metas]) => [id, resolveMetaArray_(metas)]);
+      case "tag":
+        return forwardIter(this.tagView?.entries(),
+          ([id, metas]) => [id, resolveMetaArray_(metas)]);
     }
   }
 
   values(view: "default"): Array<Markdown> | undefined;
   values(view: "time" | "tag"): Array<Array<Markdown>> | undefined;
   values(view: ViewType): | Array<Markdown> | Array<Array<Markdown>> | undefined {
-    if (view === "default") {
-      return forwardIter<MarkdownMeta, Markdown>
-        (this.defaultMap?.values())
-        (resolveMeta_);
+    switch (view) {
+      case "default":
+        return forwardIter(this.defaultMap?.values(), resolveMeta_);
+      case "time":
+        return forwardIter(this.timeView?.values(), resolveMetaArray_);
+      case "tag":
+        return forwardIter(this.tagView?.values(), resolveMetaArray_);
     }
-    return forwardIter<Array<MarkdownMeta>, Array<Markdown>>
-      ((() => {
-        switch (view) {
-          case "time": return this.timeView;
-          case "tag": return this.tagView;
-        }
-      })()?.values())
-      (e => e.map(resolveMeta_));
   }
 
   keys(view: "default"): Array<number> | undefined;
   keys(view: "time" | "tag"): Array<string> | undefined;
   keys(view: ViewType): | Array<number> | Array<string> | undefined {
-    if (view === "default") {
-      const val = this.defaultMap?.keys();
-      if (val === undefined) return val;
-      return Array.from(val);
-    }
-    if (view === "time") {
-      const val = this.timeView?.keys();
-      if (val === undefined) return val;
-      return Array.from(val);
-    }
-    if (view === "tag") {
-      const val = this.tagView?.keys();
-      if (val === undefined) return val;
-      return Array.from(val);
+    switch (view) {
+      case "default":
+        return forwardIter(this.defaultMap?.keys());
+      case "time":
+        return forwardIter(this.timeView?.keys());
+      case "tag":
+        return forwardIter(this.tagView?.keys());
     }
   }
 }
-
-const forwardIter =
-  <T, U>(iter?: IterableIterator<T>) =>
-    (cb: ((e: T) => U)): Array<U> | undefined => {
-      if (iter === undefined) return undefined;
-      return Array.from(iter, cb);
-    };
 
 export class MarkdownRuntimeDatabase extends MarkdownDatabase {
   public constructor(
@@ -157,6 +135,10 @@ async function fetchStatic(publicUrl: string, url: string, id: number): Promise<
   return data;
 }
 
+function resolveMetaArray_(metas: Array<MarkdownMeta>): Array<Markdown> {
+  return metas.map(e => resolveMeta_(e));
+}
+
 function resolveMeta(meta?: MarkdownMeta): Markdown | undefined {
   return meta === undefined ? meta : resolveMeta_(meta);
 }
@@ -173,4 +155,17 @@ function resolveMeta_(meta: MarkdownMeta): Markdown {
       }
     })(),
   }
+}
+
+function forwardIter<T>(iter?: IterableIterator<T>): Array<T> | undefined;
+function forwardIter<T, U>(iter: IterableIterator<T> | undefined, cb: ((v: T) => U)): Array<U> | undefined;
+function forwardIter<T, U>(iter?: IterableIterator<T>, cb?: ((v: T) => U)):
+  | Array<U>
+  | Array<T>
+  | undefined {
+  if (iter === undefined) return undefined;
+  if (cb === undefined) {
+    return Array.from(iter);
+  }
+  return Array.from(iter, cb);
 }

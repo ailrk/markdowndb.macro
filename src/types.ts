@@ -60,7 +60,6 @@ export type ViewType =
 export interface MarkdownDB {
   // get by id
   get(key: number): Markdown | undefined,
-
   // get by time or tag.
   get(key: Date | string): Array<Markdown> | undefined,
 
@@ -73,6 +72,25 @@ export interface MarkdownDB {
   keys(view: "default"): Array<number> | undefined,
   keys(view: "time" | "tag"): Array<string> | undefined,
 }
+
+// iterator version.Less memory overhead.
+export interface MarkdownDBIter {
+  // get by id
+  get(key: number): Markdown | undefined,
+
+  // get by time or tag.
+  get(key: Date | string): IterableIterator<Markdown> | undefined,
+
+  entries(view: "default"): IterableIterator<[number, Markdown]> | undefined,
+  entries(view: "time" | "tag"): IterableIterator<[string, Array<Markdown>]> | undefined,
+
+  values(view: "default"): IterableIterator<Markdown> | undefined,
+  values(view: "time" | "tag"): IterableIterator<Array<Markdown>> | undefined,
+
+  keys(view: "default"): IterableIterator<number> | undefined,
+  keys(view: "time" | "tag"): IterableIterator<string> | undefined,
+}
+
 
 // specific how to build markdowns
 // By default it uses "static method"
