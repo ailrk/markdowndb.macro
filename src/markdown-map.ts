@@ -1,86 +1,99 @@
-import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownText} from './types';
+import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownText, MarkdownMeta} from './types';
 import {htmlPath} from './preprocess/static-gen';
 
 export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
   // it encloses the url it will fetch from.
-  defaultMap?: Map<number, Markdown>;
-  tagView?: Map<string, Array<Markdown>>;
-  timeView?: Map<string, Array<Markdown>>;
+  defaultMap?: Map<number, MarkdownMeta>;
+  tagView?: Map<string, Array<MarkdownMeta>>;
+  timeView?: Map<string, Array<MarkdownMeta>>;
 
   get(key: number): Markdown | undefined;
   get(key: Date | string): Array<Markdown> | undefined;
-  get(key: Date | number | string):
-    | (Markdown | undefined)
-    | (Array<Markdown> | undefined) {
+  get(key: Date | number | string): | (Markdown | undefined) | (Array<Markdown> | undefined) {
     switch (typeof key) {
       case "number":
-        return this.defaultMap?.get(key);
+        return resolveMeta(this.defaultMap?.get(key));
       case "string":
-        return this.tagView?.get(key);
+        return this.tagView?.get(key)?.map(resolveMeta_);
     }
-    return this.timeView?.get(key.toJSON());
+    return this.timeView?.get(key.toJSON())?.map(resolveMeta_);
   }
 
-  entries(view: "default"): IterableIterator<[number, Markdown]> | undefined;
-  entries(view: "time" | "tag"):
-    IterableIterator<[string, Array<Markdown>]> | undefined;
-  entries(view: ViewType):
-    | IterableIterator<[number, Markdown]>
-    | IterableIterator<[string, Array<Markdown>]>
-    | undefined {
+  entries(view: "default"): Array<[number, Markdown]> | undefined;
+  entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined;
+  entries(view: ViewType): | Array<[number, Markdown]> | Array<[string, Array<Markdown>]> | undefined {
     switch (view) {
       case "default":
-        return this.defaultMap?.entries();
+        return forwardIter<[number, MarkdownMeta], [number, Markdown]>
+          (this.defaultMap?.entries())
+          (([id, m]) => [id, resolveMeta_(m)]);
       case "time":
-        return this.timeView?.entries();
-      case "tag":
-        return this.tagView?.entries();
+        return forwardIter
+          <[string, Array<MarkdownMeta>], [string, Array<Markdown>]>
+          (this.timeView?.entries())
+          (([time, m]) => [time, m.map(resolveMeta_)]);
+      case "tag": {
+        return forwardIter
+          <[string, Array<MarkdownMeta>], [string, Array<Markdown>]>
+          (this.tagView?.entries())
+          (([tag, m]) => [tag, m.map(resolveMeta_)]);
+      }
     }
   }
 
-  values(view: "default"): IterableIterator<Markdown> | undefined;
-  values(view: "time" | "tag"):
-    IterableIterator<Array<Markdown>> | undefined;
-  values(view: ViewType):
-    | IterableIterator<Markdown>
-    | IterableIterator<Array<Markdown>>
-    | undefined {
-    switch (view) {
-      case "default":
-        return this.defaultMap?.values();
-      case "time":
-        return this.timeView?.values();
-      case "tag":
-        return this.tagView?.values();
-    }
-  }
-
-  keys(view: "default"): IterableIterator<number> | undefined;
-  keys(view: "time" | "tag"):
-    IterableIterator<string> | undefined;
-  keys(view: ViewType):
-    | IterableIterator<number>
-    | IterableIterator<string>
-    | undefined {
+  values(view: "default"): Array<Markdown> | undefined;
+  values(view: "time" | "tag"): Array<Array<Markdown>> | undefined;
+  values(view: ViewType): | Array<Markdown> | Array<Array<Markdown>> | undefined {
     if (view === "default") {
-      return this.defaultMap?.keys();
+      return forwardIter<MarkdownMeta, Markdown>
+        (this.defaultMap?.values())
+        (resolveMeta_);
+    }
+    return forwardIter<Array<MarkdownMeta>, Array<Markdown>>
+      ((() => {
+        switch (view) {
+          case "time": return this.timeView;
+          case "tag": return this.tagView;
+        }
+      })()?.values())
+      (e => e.map(resolveMeta_));
+  }
+
+  keys(view: "default"): Array<number> | undefined;
+  keys(view: "time" | "tag"): Array<string> | undefined;
+  keys(view: ViewType): | Array<number> | Array<string> | undefined {
+    if (view === "default") {
+      const val = this.defaultMap?.keys();
+      if (val === undefined) return val;
+      return Array.from(val);
     }
     if (view === "time") {
-      return this.timeView?.keys();
+      const val = this.timeView?.keys();
+      if (val === undefined) return val;
+      return Array.from(val);
     }
     if (view === "tag") {
-      return this.tagView?.keys();
+      const val = this.tagView?.keys();
+      if (val === undefined) return val;
+      return Array.from(val);
     }
   }
 }
+
+const forwardIter =
+  <T, U>(iter?: IterableIterator<T>) =>
+    (cb: ((e: T) => U)): Array<U> | undefined => {
+      if (iter === undefined) return undefined;
+      return Array.from(iter, cb);
+    };
 
 export class MarkdownRuntimeDatabase extends MarkdownDatabase {
   public constructor(
     other: Map<number, MarkdownRaw>,
     indices: Record<ViewType, Map<string, Array<MarkdownRaw>>>) {
     super();
-    const f: ToMarkdown<MarkdownRaw> = val => (
+    const f: ToMarkdownMeta<MarkdownRaw> = val => (
       {
         header: val.header,
         content: Promise.resolve(val.content),
@@ -93,13 +106,12 @@ export class MarkdownRuntimeDatabase extends MarkdownDatabase {
           return [id, f(raw)] as [number, Markdown];
         })
     );
-    this.tagView = promisify(indices.tag, f);
-    this.timeView = promisify(indices.time, f);
+    this.tagView = metaview(indices.tag, f);
+    this.timeView = metaview(indices.time, f);
   }
 }
 
 export class MarkdownStaticDatabase extends MarkdownDatabase {
-  fetchStatic: ((id: number) => Promise<Markdown>) | undefined;
 
   public constructor(
     // TODO public url
@@ -107,27 +119,27 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
     indices: Record<ViewType, Map<string, Array<MarkdownHeader>>>) {
     super();
     const {url, publicUrl, map} = other;
-    const f: ToMarkdown<MarkdownHeader> = val => (
+    const f: ToMarkdownMeta<MarkdownHeader> = header => (
       {
-        header: val,
-        content: fetchStatic(publicUrl)(url)(val.id),
+        header,
+        content: () => fetchStatic(publicUrl, url, header.id),
       }
     );
     this.defaultMap = new Map(
       Array.from(map)
         .map(e => {
           const [id, header] = e;
-          const md: Markdown = f(header);
+          const md: MarkdownMeta = f(header);
           return [id, md] as [number, Markdown];
         })
     );
-    this.tagView = promisify(indices.tag, f);
-    this.timeView = promisify(indices.time, f);
+    this.tagView = metaview(indices.tag, f);
+    this.timeView = metaview(indices.time, f);
   }
 }
 
-type ToMarkdown<T> = (val: T) => Markdown;
-export function promisify<K, T>(map: Map<K, Array<T>>, f: ToMarkdown<T>) {
+type ToMarkdownMeta<T> = (val: T) => MarkdownMeta;
+export function metaview<K, T>(map: Map<K, Array<T>>, f: ToMarkdownMeta<T>) {
   const array = Array.from(map)
     .map(e => {
       const [k, v] = e;
@@ -137,12 +149,28 @@ export function promisify<K, T>(map: Map<K, Array<T>>, f: ToMarkdown<T>) {
   return new Map(array);
 }
 
-const fetchStatic = (publicUrl: string) =>
-  (url: string) =>
-    async (id: number): Promise<MarkdownText> => {
-      const purl = `${publicUrl}/${url}`;
-      const addr = htmlPath(purl, id.toString());
-      console.log(addr);
-      const data = await fetch(addr);
-      return await data.text();
-    }
+async function fetchStatic(publicUrl: string, url: string, id: number): Promise<MarkdownText> {
+  const purl = `${publicUrl}/${url}`;
+  const addr = htmlPath(purl, id.toString());
+  console.log(addr);
+  const data = (await fetch(addr)).text();
+  return data;
+}
+
+function resolveMeta(meta?: MarkdownMeta): Markdown | undefined {
+  return meta === undefined ? meta : resolveMeta_(meta);
+}
+
+function resolveMeta_(meta: MarkdownMeta): Markdown {
+  const {header, content} = meta;
+  return {
+    header,
+    content: (() => {
+      if (typeof content === "function") {
+        return content();
+      } else {
+        return content;
+      }
+    })(),
+  }
+}

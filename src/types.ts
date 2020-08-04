@@ -18,7 +18,15 @@ export interface MarkdownHeader {
 
 export type MarkdownText = string;
 
+export type MarkdownMetaContent =
+  | Promise<MarkdownText>
+  | (() => Promise<MarkdownText>)
+  ;
+
 // primitive Markdown type, only exist at compile time.
+// after compile time all MarkdownRaw should turn into
+// MardownMeta, and further into Markdown, which is the datatype
+// exposed to users.
 export interface MarkdownRaw {
   // mark down header
   readonly header: MarkdownHeader,
@@ -27,11 +35,19 @@ export interface MarkdownRaw {
   readonly content: MarkdownText,
 }
 
+// this is the type used internally for MarkdownDB
+// because you want to evaluate static mode DB lazyily.
+export type MarkdownMeta =
+  Pick<MarkdownRaw, "header">
+  & {content: MarkdownMetaContent}
+  ;
+
 // Markdown is the what exposed to the user.
 // Different from `MarkdownRaw`, it holds a promise of MarkdownText.
-export type Markdown = {
-  readonly [P in keyof MarkdownRaw]: MarkdownRaw[P] extends MarkdownText ? Promise<MarkdownText> : MarkdownRaw[P]
-}
+export type Markdown =
+  Pick<MarkdownRaw, "header">
+  & {content: Promise<MarkdownText>}
+  ;
 
 // Indicate different view of markdown. When using MarkdownDB, pass this token
 // to select overloaded method.
@@ -48,17 +64,14 @@ export interface MarkdownDB {
   // get by time or tag.
   get(key: Date | string): Array<Markdown> | undefined,
 
-  entries(view: "default"): IterableIterator<[number, Markdown]> | undefined,
-  entries(view: "time" | "tag"):
-    IterableIterator<[string, Array<Markdown>]> | undefined,
+  entries(view: "default"): Array<[number, Markdown]> | undefined,
+  entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined,
 
-  values(view: "default"): IterableIterator<Markdown> | undefined,
-  values(view: "time" | "tag"):
-    IterableIterator<Array<Markdown>> | undefined,
+  values(view: "default"): Array<Markdown> | undefined,
+  values(view: "time" | "tag"): Array<Array<Markdown>> | undefined,
 
-  keys(view: "default"): IterableIterator<number> | undefined,
-  keys(view: "time" | "tag"):
-    IterableIterator<string> | undefined,
+  keys(view: "default"): Array<number> | undefined,
+  keys(view: "time" | "tag"): Array<string> | undefined,
 }
 
 // specific how to build markdowns
