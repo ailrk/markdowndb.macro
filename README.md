@@ -26,8 +26,10 @@ Each markdown has its own metadata upfront. Write your article in this format:
 
 ### How to use
 ##### runtime mode and static mode
-There are two modes to build a markdown db -- `runtime mode` and `static mode`.
+There are two modes to build a markdown db: `runtime mode` and `static mode`.
+
 In `runtime mode`, all markdowns are packed into the final app and are transferred upon the first request. Runtime mode has very fast response time once all data is loaded, but it will make inital load time much longer. In addition, `runtime mode` will load all markdowns in client side even if they are not used, which can cause inefficient memory usage.
+
 In `static mode` markdown files are host on the static server, and header of markdown will be accessable after the first load. The markdown files are lazily evaluated: requests are only sent when it is accessed via the interface.
 
 ##### Views of markdown db
