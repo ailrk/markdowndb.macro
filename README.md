@@ -26,8 +26,8 @@ Each markdown has its own metadata upfront. Write your article in this format:
 
 ### How to use
 ##### runtime mode and static mode
-There are two modes to build markdown db -- `runtime mode` and `static mode`.
-In `runtime mode` all markdowns are sent to the client in the first connection; But `static mode` only header information is sent, markdown content will be wrapped in a promise and resolve when needed.
+There are two modes to build a markdown db -- `runtime mode` and `static mode`.
+In `runtime mode` all markdowns are sent to the client in the first connection; In `static mode` only header information is sent, markdown content will be wrapped in a promise and resolve when needed.
 
 Assume you have this directory hierachy:
 ```
@@ -35,32 +35,39 @@ articles/
   | markdown1.md
   | markdown2.md
 src/
-
 ```
 where `articles` is where you put all your markdowns.
 
-##### views of markdown db
+##### Views of markdown db
 There are three views of markdowns: `default`, `tag`, and `time`. In `default` view each markdown is indexed by id; in tag and time mode an array of markdowns are indexed by their corresponding tags or date.
 
-##### runtime mode
-In `runtime mode`, use it like this:
+##### Demo
 ```typescript
-import markdowndb, {
+// you need to make sure constructors of MarkdownRuntimeDatabase
+// and MarkdownStaticDatabase are avaibale in the scope because they will
+// be used during compile time.
+import {
   MarkdownRuntimeDatabase,
-  Markdown
-} from 'markdowndb.macro';
+  MarkdownStaticDatabase,
+} from 'markdowndb.macro/dist/markdown-map';
+import markdowndb, { Markdown } from 'markdowndb.macro';
 
-// runtime mode will be used by default.
-const md: MarkdownRuntimeDatabase = markdowndb('articles', 'runtime');
+// Public url of your app. It must be a string literal.
+const publicURL: string = "home":
+
+// create dbs in different modes.
+const mdruntime: MarkdownDB = markdowndb('folder1', 'runtime');
+const mdstatic: MarkdownDB = markdowndb('foler2', 'static', publicURL);
+
 
 // "default" mode, query by id
 const md1: Markdown = db.get(12341);
 
 // "tag" mode, query markdowns with the same tag.
-const md2s: Array<Markdown> db .get("tag1");
+const md2s: Array<Markdown> = db.get("tag1");
 
 // "time" mode, query markdowns with the same date.
-const md3s: Array<Markdown> db .get(new Date("2020, 7, 1"));
+const md3s: Array<Markdown> = db.get(new Date(2020, 7, 1));
 
 // markdown content is wrapped in dummy promise in runtime mode
 md.content.then(m => {
@@ -68,16 +75,14 @@ md.content.then(m => {
 });
 
 // Get iterator of keys from different views.
-const db_ids: Array<number> = Array.from(db.keys("default"));
-const db_tags: Array<string> = Array.from(db.keys("tag"));
-const db_times: Array<Date> = Array.from(db.keys("time")).map(e => new Date(e));
+const db_ids = db.keys("default");
+const db_tags = db.keys("tag");
+const db_times = Array.from(db.keys("time")).map(e => new Date(e));
 
 export {Markdown, MarkdownDB} from 'markdowndb.macro';
 ```
 Note because the type is exposed at compile time, you need to re-export types you want to use at runtime. This is not ideal and if you have a better solution please open a RP.
 
-##### static mode
-When compiling, a folder with all static files generated from markdowns will be created in `public` folder in your project directory. You need to make sure the `public`folder can be accessed from url (e.g in `create-react-app` application `public` is default for hosting static files).`static mode` has exactly the same interface as `runtime mode`, the only difference is when the promise is resolved, it will sent a request to the server and query the given markdown content.
 
 ##### interfaces
 You can query `markdowns` based on following type:
@@ -118,7 +123,6 @@ export interface MarkdownDB {
 id is a 32 digit fnv1a hash on the title. It has very good randomness but collision is still possible. Notice because datetime is not hashable, to access markdowns via `indexTime` you need to convert the datetime into string by invoking `Date.toJSON()` method.
 
 ### What's next
-* [ ] Support user defined header format.
 * [x] Current format will be the default.
 * [x] compile cached query results at compile time.
 * [x] extraction source and tag at build time.
