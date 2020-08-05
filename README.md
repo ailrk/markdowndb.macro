@@ -35,6 +35,9 @@ In `static mode` markdown files are host on the static server, and header of mar
 ##### Views of markdown db
 There are three views of markdowns: `default`, `tag`, and `time`. In `default` view each markdown is indexed by id; in tag and time mode an array of markdowns are indexed by their corresponding tags or date.
 
+##### AllDB interface
+If you have multiple folders to host, you might want a single unified interface to access everyting. To achieve that you can use `AllDB`. The constructor takes a list of `MarkdownDB`, and provide a single `MarkdownDB` interface on top of all of them (regardless of what mode are them created with).
+
 ##### Demo
 Assume you have this directory hierachy:
 ```
@@ -53,6 +56,7 @@ where `articles` is where you put all your markdowns.
 import {
   MarkdownRuntimeDatabase,
   MarkdownStaticDatabase,
+  AllDB,
 } from 'markdowndb.macro/dist/markdown-map';
 
 import markdowndb, { Markdown } from 'markdowndb.macro';
@@ -63,15 +67,23 @@ const publicURL: string = "/home":
 // create dbs in different modes.
 const mdruntime: MarkdownDB = markdowndb('folder1', 'runtime');
 const mdstatic: MarkdownDB = markdowndb('foler2', 'static', publicURL);
+const all: MarkdownDB = new AllDB([
+    mdruntime,
+    mdstatic,
+]);
 
 // "default" mode, query by id
-const md1: Markdown = db.get(12341);
+const md1: Markdown = mdruntime.get(12341);
+// same interface for static mode. `mdstatic1.content` is loaded lazily,
+const mdstatic1: Markdown = mdstatic.get(22332);
+// get the same markdown from AllDB.
+const all1: Markdown = all.get(12341);
 
 // "tag" mode, query markdowns with the same tag.
-const md2s: Array<Markdown> = db.get("tag1");
+const md2s: Array<Markdown> = mdruntime.get("tag1");
 
 // "time" mode, query markdowns with the same date.
-const md3s: Array<Markdown> = db.get(new Date(2020, 7, 1));
+const md3s: Array<Markdown> = db.runtime(new Date(2020, 7, 1));
 
 // markdown content is wrapped in dummy promise in runtime mode
 md.content.then(m => {
