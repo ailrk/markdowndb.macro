@@ -61,12 +61,9 @@ import {
 
 import markdowndb, { Markdown } from 'markdowndb.macro';
 
-// Public url of your app. It must be a string literal.
-const publicURL: string = "/home":
-
 // create dbs in different modes.
 const mdruntime: MarkdownDB = markdowndb('folder1', 'runtime');
-const mdstatic: MarkdownDB = markdowndb('foler2', 'static', publicURL);
+const mdstatic: MarkdownDB = markdowndb('foler2', 'static', '/home');
 const all: MarkdownDB = new AllDB([
     mdruntime,
     mdstatic,
