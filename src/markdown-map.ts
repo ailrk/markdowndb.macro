@@ -94,7 +94,6 @@ export class MarkdownRuntimeDatabase extends MarkdownDatabase {
 export class MarkdownStaticDatabase extends MarkdownDatabase {
 
   public constructor(
-    // TODO public url
     other: {url: string, publicUrl: string, map: Map<number, MarkdownHeader>},
     indices: Record<ViewType, Map<string, Array<MarkdownHeader>>>) {
     super();
