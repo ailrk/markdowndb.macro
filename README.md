@@ -144,4 +144,4 @@ id is a 32 digit fnv1a hash on the title. It has very good randomness but collis
 * [x] extraction source and tag at build time.
 * [x] build time fast index table. make tag indexing faster.
 * [x] serve static file from public
-* [] support incremental build (without rebuild everything all together)
+* [x] support incremental build (without rebuild everything all together)
