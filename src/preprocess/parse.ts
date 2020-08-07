@@ -10,8 +10,7 @@ import {MarkdownRaw} from '../types';
 export function makeMarkdownDB(dirname: string): Array<MarkdownRaw> {
   const markdownarray = fs.readdirSync(dirname)
     .map(filename => path.resolve(dirname, filename))
-    .map(filename => parseMarkdown(filename))
-    .filter(e => e !== undefined) as Array<MarkdownRaw>;
+    .map(filename => parseMarkdown(filename));
 
   {
     // check duplication.
@@ -24,7 +23,7 @@ export function makeMarkdownDB(dirname: string): Array<MarkdownRaw> {
   return markdownarray;
 }
 
-export function parseMarkdown(filename: string): MarkdownRaw | undefined {
+export function parseMarkdown(filename: string): MarkdownRaw {
   const txt =
     fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
 

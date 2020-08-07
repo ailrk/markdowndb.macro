@@ -19,7 +19,7 @@ function markdowndbMacros({references, state, babel}: MacroParams) {
 };
 
 // db will represented as json string.
-const requiremarkdowndb = ({referencePath, state, babel}:
+const requiremarkdowndb = async ({referencePath, state, babel}:
   Omit<MacroParams, 'references'> & {referencePath: NodePath<Node>}) => {
   const filename = state.file.opts.filename;
   const t = babel.types;
@@ -42,7 +42,7 @@ const requiremarkdowndb = ({referencePath, state, babel}:
     }
   }
 
-  const content = (() => {
+  const content = await (() => {
     switch (mode) {
       case "static":
         return Builder.build(markdownDir, "static", publicURL);

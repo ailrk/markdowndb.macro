@@ -4,17 +4,20 @@ import * as StaticBuilder from './static-builder';
 import {MarkdownDBMode} from '../types';
 import * as Parse from '../preprocess/parse';
 import * as StaticGen from '../preprocess/static-gen';
-import {Expression} from '@babel/types';
 
 // dispatch markdown build mode.
-export function build(mdpath: string, mode: MarkdownDBMode, publicUrl?: string): Expression {
-  const markdownarray = Parse.makeMarkdownDB(path.resolve(mdpath));
+export async function build(mdpath: string, mode: MarkdownDBMode, publicUrl?: string) {
   switch (mode) {
-    case "runtime":
+    case "runtime": {
+      const markdownarray = Parse.makeMarkdownDB(path.resolve(mdpath));
       return RuntimeBuilder.buildMarkdownDBAST(markdownarray);
-    case "static":
-      StaticGen.toPublic(markdownarray, "public", mdpath);
+    }
+    case "static": {
+      const markdownarray = await StaticGen.toPublic({
+        pubDir: "public", url: mdpath
+      });
       return StaticBuilder.buildMarkdownDBAST(mdpath, markdownarray, publicUrl ?? "/");
+    }
     default:
       throw new Error("unknown build mode. Either static or runtime");
   }
