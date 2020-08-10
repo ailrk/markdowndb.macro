@@ -20,7 +20,7 @@ import {MarkdownRaw} from 'src/types';
 // 2. declare b, c :: Map<string, MarkdownHeader>
 // 3. mmap = MarkdownStaticDatabase(a, {time, a, tag: b})
 // 4. return mmap.
-export function buildMarkdownDBAST(url: string, markdowns: Array<MarkdownRaw>, publicUrl: string) {
+export function buildMarkdownDBAST(url: string, markdowns: MarkdownRaw[], publicUrl: string) {
   const t = babelcore.types;
   const defaultMap = assignBuilder('defaultMap', markdownHeaderMapBuilder(markdowns));
   const tagIdex = assignBuilder('tagIdex', t.newExpression(t.identifier('Map'), []));
@@ -65,7 +65,7 @@ function markdownStaticObjBuilder(url: string, publicUrl: string, headers: strin
 }
 
 // Map<number, MarkdownHeader>
-function markdownHeaderMapBuilder(markdowns: Array<MarkdownRaw>) {
+function markdownHeaderMapBuilder(markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const pair = (m: MarkdownRaw) =>
     template.expression`[ID, MARKDOWN_HEADER_OBJ]`
@@ -82,18 +82,18 @@ function markdownHeaderMapBuilder(markdowns: Array<MarkdownRaw>) {
 }
 
 // _ :: Map<string, Array<MarkdownHeader>>
-export function tagIndexBlockBuilder(to: string, from: string, markdowns: Array<MarkdownRaw>) {
+export function tagIndexBlockBuilder(to: string, from: string, markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const tagIndex = getTagIdMap(markdowns.map(m => m.header));
   const block = tagIndex.map(
-    (tagIds: [string, Array<number>]) => {
+    (tagIds: [string, number[]]) => {
       const [tag, ids] = tagIds;
       return t.expressionStatement(setMapBuilder(to, tag, markdownArrayBuilder(from, ids)))
     });
   return t.blockStatement(block);
 }
 
-export function timeIndexBlockBuilder(to: string, from: string, markdowns: Array<MarkdownRaw>) {
+export function timeIndexBlockBuilder(to: string, from: string, markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const timeIndex = getTimeIdMap(markdowns.map(m => m.header));
   const block = timeIndex.map((timeIds: [any, any]) => {

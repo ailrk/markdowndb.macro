@@ -5,33 +5,41 @@ import MardownIt from 'markdown-it';
 import * as HLJS from 'highlightjs';
 import {fnv1a} from '../utils/hash';
 import {MarkdownRaw} from '../types';
+import {promisify} from 'util';
 
 // parse the whole directory.
-export function makeMarkdownDB(dirname: string): Array<MarkdownRaw> {
-  const markdownarray = fs.readdirSync(dirname)
+export async function makeMarkdownDB(dirname: string): Promise<MarkdownRaw[]> {
+  const dir = (await promisify(fs.readdir)(dirname));
+  const readfile_ = promisify(fs.readFile);
+  const promises = dir
     .map(filename => path.resolve(dirname, filename))
-    .map(filename => parseMarkdown(filename));
+    .map(async filename => parseMarkdown({
+      filename,
+      rawtxt: (await readfile_(filename, {encoding: "utf8"}))
+    }));
 
+  const markdowns = await Promise.all(promises);
   {
     // check duplication.
-    const dups = checkdup(markdownarray);
+    const dups = checkdup(markdowns);
     if (dups.length !== 0) {
       throw new Error(`Some article titles collide in their hash. please change title` +
         ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`);
     }
   }
-  return markdownarray;
+
+  return markdowns;
 }
 
-export function parseMarkdown(filename: string): MarkdownRaw {
-  const txt =
-    fs.readFileSync(filename, {encoding: "utf-8"}).split(';;');
+export function parseMarkdown(props: {filename: string, rawtxt: string}): MarkdownRaw {
+  const {filename, rawtxt} = props;
+  const txt = rawtxt.split(';;');
 
   const headers = txt[0].split("-- ").filter(e => e !== '');
   const content = mdToHtml(txt[1]);
 
-  let tag: Array<string> | undefined;
-  let source: Array<string> | undefined;
+  let tag: string[] | undefined;
+  let source: string[] | undefined;
   let time: Date | undefined;
   let title: string | undefined;
 
@@ -102,6 +110,6 @@ function mdToHtml(md: string): string {
   return rmd.render(md);
 }
 
-function checkdup(markdowns: Array<MarkdownRaw>) {
+function checkdup(markdowns: MarkdownRaw[]) {
   return markdowns.filter((m, idx) => markdowns.indexOf(m) !== idx);
 }

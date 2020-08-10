@@ -33,7 +33,7 @@ export function setMapBuilder(b: string, key: string, val: ArrayExpression) {
 }
 
 // [a.get(1), a.get(2)]
-export function markdownArrayBuilder(a: string, ids: Array<number>) {
+export function markdownArrayBuilder(a: string, ids: number[]) {
   const t = babelcore.types;
   const memberCall = t.memberExpression(
     t.identifier(a),
@@ -48,7 +48,7 @@ export function markdownArrayBuilder(a: string, ids: Array<number>) {
 }
 
 // Map<number, MarkdownRaw>
-export function markdownMapBuilder(markdowns: Array<MarkdownRaw>) {
+export function markdownMapBuilder(markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const pair = (m: MarkdownRaw) => t.arrayExpression([
     t.numericLiteral(m.header.id),
@@ -97,31 +97,31 @@ export function buildMarkdownHeaderObjAST(markdown: MarkdownRaw) {
 }
 
 //  new Map([s1, [m.get(1), m.get(2)], s2, [m.get(4), m.get(9), m.get(12)] ...])
-export function getTagIdMap(headers: Array<MarkdownHeader>): Array<[string, Array<number>]> {
-  type Val_ = [string, Array<number>];
+export function getTagIdMap(headers: MarkdownHeader[]): [string, number[]][] {
+  type Val_ = [string, number[]];
   const buildval = Util_.buildval(headers, "tag");
   const tags: Set<string> = new Set(flat(
     headers
       .map(m => m.tag)
-      .filter(tl => tl !== undefined) as Array<Array<string>>
+      .filter(tl => tl !== undefined) as string[][]
   ));
 
   {
-    let acc: Array<Val_> = [];
+    let acc: Val_[] = [];
     tags.forEach(tag => {acc.push(buildval(tag));});
     return acc;
   }
 }
 
 // date can not be key, so use its Json format.
-export function getTimeIdMap(headers: Array<MarkdownHeader>): Array<[string, Array<number>]> {
+export function getTimeIdMap(headers: MarkdownHeader[]): [string, number[]][] {
   type Val_ = [string, Array<number>];
   const buildval = Util_.buildval(headers, "time");
   const timeStrs: Set<string> = new Set(
     headers.map(m => m.time.toJSON()));
 
   {
-    let acc: Array<Val_> = [];
+    let acc: Val_[] = [];
     timeStrs.forEach(tStr => {acc.push(buildval(tStr))});
     return acc;
   }
@@ -139,8 +139,8 @@ export function buildIndexObjAST(tag: string, time: string) {
 namespace Util_ {
   // build tuple of key and all markdowns it refers to.
   export const buildval =
-    (markdowns: Array<MarkdownHeader>, keytype: keyof MarkdownHeader) =>
-      (key: string): [string, Array<number>] => {
+    (markdowns: MarkdownHeader[], keytype: keyof MarkdownHeader) =>
+      (key: string): [string, number[]] => {
         const f = (m: MarkdownHeader) => {
           let val: any;
           switch (keytype) {
@@ -149,10 +149,10 @@ namespace Util_ {
               return key === val!;
             case "tag":
               val = m.tag;
-              return (val! as Array<string>).includes(key);
+              return (val! as string[]).includes(key);
             case "source":
               val = m.source;
-              return (val! as Array<string>).includes(key);
+              return (val! as string[]).includes(key);
             case "time":
               val = m.title;
               return key === val!;

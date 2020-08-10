@@ -9,7 +9,7 @@ import * as StaticGen from '../preprocess/static-gen';
 export async function build(mdpath: string, mode: MarkdownDBMode, publicUrl?: string) {
   switch (mode) {
     case "runtime": {
-      const markdownarray = Parse.makeMarkdownDB(path.resolve(mdpath));
+      const markdownarray = await Parse.makeMarkdownDB(path.resolve(mdpath));
       return RuntimeBuilder.buildMarkdownDBAST(markdownarray);
     }
     case "static": {

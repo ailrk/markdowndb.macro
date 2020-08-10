@@ -3,8 +3,7 @@ import {NodePath, Node} from '@babel/core';
 import * as Builder from './builder/builder';
 import {MarkdownDBMode, MarkdownDB} from './types';
 
-type CreateMarkdownDB = (dir: string, mode: MarkdownDBMode) => MarkdownDB;
-export declare const createMarkdownDB: CreateMarkdownDB;
+export type CreateMarkdownDBFn = (dir: string, mode: MarkdownDBMode, publicURL?: string) => MarkdownDB;
 export default createMacro(markdowndbMacros);
 
 function markdowndbMacros({references, state, babel}: MacroParams) {
@@ -12,8 +11,8 @@ function markdowndbMacros({references, state, babel}: MacroParams) {
     if (referencePath.parentPath.type == "CallExpression") {
       requiremarkdowndb({referencePath, state, babel});
     } else {
-      throw new Error(`This is not supported` +
-        `${referencePath.findParent(babel.types.isExpression).getSource()}`);
+      throw new Error(`This is not supported`
+        + `${referencePath.findParent(babel.types.isExpression).getSource()}`);
     }
   });
 };
@@ -28,7 +27,7 @@ const requiremarkdowndb = async ({referencePath, state, babel}:
     throw new Error(`babel filename doesn't exist`);
   }
 
-  const args = callExpressionPath.get("arguments") as Array<NodePath<Node>>
+  const args = callExpressionPath.get("arguments") as NodePath<Node>[]
   const markdownDir: string | undefined = args[0]?.evaluate()?.value;
   const mode: MarkdownDBMode | undefined = args[1]?.evaluate()?.value;
   const publicURL: string | undefined = args[2]?.evaluate()?.value ?? "/";

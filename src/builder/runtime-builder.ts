@@ -17,7 +17,7 @@ import {
 // 2. declare b, c :: Map<string, Array<Markdown>>
 // 3. mmap = MarkdownRuntimeDatabase(a, {time: a, tag: b});
 // 4. return mmap
-export function buildMarkdownDBAST(markdowns: Array<MarkdownRaw>) {
+export function buildMarkdownDBAST(markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const defaultMap = assignBuilder('defaultMap', markdownMapBuilder(markdowns));
   const tagIndex = assignBuilder('tagIndex', t.newExpression(t.identifier('Map'), []));
@@ -52,18 +52,18 @@ function runtimeMarkdownDatabaseBuilder(main: string, tag: string, time: string)
 }
 
 // _ :: Map<string, Array<Markdown>>
-export function tagIndexBlockBuilder(to: string, from: string, markdowns: Array<MarkdownRaw>) {
+export function tagIndexBlockBuilder(to: string, from: string, markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const tagIndex = getTagIdMap(markdowns.map(m => m.header));
   const block = tagIndex.map(
-    (tagIds: [string, Array<number>]) => {
+    (tagIds: [string, number[]]) => {
       const [tag, ids] = tagIds;
       return t.expressionStatement(setMapBuilder(to, tag, markdownArrayBuilder(from, ids)))
     });
   return t.blockStatement(block);
 }
 
-export function timeIndexBlockBuilder(to: string, from: string, markdowns: Array<MarkdownRaw>) {
+export function timeIndexBlockBuilder(to: string, from: string, markdowns: MarkdownRaw[]) {
   const t = babelcore.types;
   const timeIndex = getTimeIdMap(markdowns.map(m => m.header));
   const block = timeIndex.map((timeIds: [any, any]) => {

@@ -1,3 +1,5 @@
+// Interface to access markdown files.
+// this class will be used at runtime.
 import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownText, MarkdownMeta} from './types';
 import {htmlPath} from './preprocess/static-gen';
 import {flat} from './utils/flat';
@@ -7,12 +9,12 @@ export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
   // it encloses the url it will fetch from.
   defaultMap?: Map<number, MarkdownMeta>;
-  tagView?: Map<string, Array<MarkdownMeta>>;
-  timeView?: Map<string, Array<MarkdownMeta>>;
+  tagView?: Map<string, MarkdownMeta[]>;
+  timeView?: Map<string, MarkdownMeta[]>;
 
   get(key: number): Markdown | undefined;
-  get(key: Date | string): Array<Markdown> | undefined;
-  get(key: Date | number | string): | (Markdown | undefined) | (Array<Markdown> | undefined) {
+  get(key: Date | string): Markdown[] | undefined;
+  get(key: Date | number | string): | (Markdown | undefined) | (Markdown[] | undefined) {
     switch (typeof key) {
       case "number":
         return resolveMeta(this.defaultMap?.get(key));
@@ -22,11 +24,11 @@ export class MarkdownDatabase implements MarkdownDB {
     return this.timeView?.get(key.toJSON())?.map(resolveMeta_);
   }
 
-  entries(view: "default"): Array<[number, Markdown]> | undefined;
-  entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined;
+  entries(view: "default"): [number, Markdown][] | undefined;
+  entries(view: "time" | "tag"): [string, Markdown[]][] | undefined;
   entries(view: ViewType):
-    | Array<[number, Markdown]>
-    | Array<[string, Array<Markdown>]>
+    | [number, Markdown][]
+    | [string, Markdown[]][]
     | undefined {
     switch (view) {
       case "default":
@@ -41,9 +43,9 @@ export class MarkdownDatabase implements MarkdownDB {
     }
   }
 
-  values(view: "default"): Array<Markdown> | undefined;
-  values(view: "time" | "tag"): Array<Array<Markdown>> | undefined;
-  values(view: ViewType): | Array<Markdown> | Array<Array<Markdown>> | undefined {
+  values(view: "default"): Markdown[] | undefined;
+  values(view: "time" | "tag"): Markdown[][] | undefined;
+  values(view: ViewType): | Markdown[] | Markdown[][] | undefined {
     switch (view) {
       case "default":
         return forwardIter(this.defaultMap?.values(), resolveMeta_);
@@ -54,9 +56,9 @@ export class MarkdownDatabase implements MarkdownDB {
     }
   }
 
-  keys(view: "default"): Array<number> | undefined;
-  keys(view: "time" | "tag"): Array<string> | undefined;
-  keys(view: ViewType): | Array<number> | Array<string> | undefined {
+  keys(view: "default"): number[] | undefined;
+  keys(view: "time" | "tag"): string[] | undefined;
+  keys(view: ViewType): | number[] | string[] | undefined {
     switch (view) {
       case "default":
         return forwardIter(this.defaultMap?.keys());
@@ -71,7 +73,7 @@ export class MarkdownDatabase implements MarkdownDB {
 export class MarkdownRuntimeDatabase extends MarkdownDatabase {
   public constructor(
     other: Map<number, MarkdownRaw>,
-    indices: Record<ViewType, Map<string, Array<MarkdownRaw>>>) {
+    indices: Record<ViewType, Map<string, MarkdownRaw[]>>) {
     super();
     const f: ToMarkdownMeta<MarkdownRaw> = val => (
       {
@@ -95,7 +97,7 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
 
   public constructor(
     other: {url: string, publicUrl: string, map: Map<number, MarkdownHeader>},
-    indices: Record<ViewType, Map<string, Array<MarkdownHeader>>>) {
+    indices: Record<ViewType, Map<string, MarkdownHeader[]>>) {
     super();
     const {url, publicUrl, map} = other;
     const f: ToMarkdownMeta<MarkdownHeader> = header => (
@@ -118,16 +120,16 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
 }
 
 export class AllDB implements MarkdownDB {
-  list?: Array<MarkdownDB> = undefined;
+  list?: MarkdownDB[] = undefined;
 
-  public constructor(list: Array<MarkdownDB>) {
+  public constructor(list: MarkdownDB[]) {
     this.list = list;
   }
   get(key: number): Markdown | undefined;
-  get(key: Date | string): Array<Markdown> | undefined;
+  get(key: Date | string): Markdown[] | undefined;
   get(key: number | Date | string):
     | (Markdown | undefined)
-    | (Array<Markdown> | undefined) {
+    | (Markdown[] | undefined) {
     if (typeof key === "number") {
       const filtered = this.list?.map(m => m.get(key)).filter(notUndefined);
       if (filtered!.length > 1) {throw new Error("id not unique");}
@@ -136,48 +138,48 @@ export class AllDB implements MarkdownDB {
     return flat(this.list?.map(db => db.get(key)).filter(notUndefined)!);
   }
 
-  entries(view: "default"): Array<[number, Markdown]> | undefined;
-  entries(view: "time" | "tag"): Array<[string, Array<Markdown>]> | undefined;
+  entries(view: "default"): [number, Markdown][] | undefined;
+  entries(view: "time" | "tag"): [string, Markdown[]][] | undefined;
   entries(view: ViewType):
-    | (Array<[number, Markdown]> | undefined)
-    | (Array<[string, Array<Markdown>]> | undefined) {
+    | ([number, Markdown][] | undefined)
+    | ([string, Markdown[]][] | undefined) {
     if (view === "default") return this.megaList(m => m.entries(view));
     else return this.megaList(m => m.entries(view));
   }
 
-  values(view: "default"): Array<Markdown> | undefined;
-  values(view: "time" | "tag"): Array<Array<Markdown>> | undefined;
+  values(view: "default"): Markdown[] | undefined;
+  values(view: "time" | "tag"): Markdown[][] | undefined;
   values(view: ViewType):
-    | Array<Markdown> | undefined
-    | Array<Array<Markdown>> | undefined {
+    | Markdown[] | undefined
+    | Markdown[][] | undefined {
     if (view === "default") return this.megaList(m => m.values(view));
     else return this.megaList(m => m.values(view));
   }
 
-  keys(view: "default"): Array<number> | undefined;
-  keys(view: "time" | "tag"): Array<string> | undefined;
+  keys(view: "default"): number[] | undefined;
+  keys(view: "time" | "tag"): string[] | undefined;
   keys(view: ViewType):
-    | Array<number> | undefined
-    | Array<string> | undefined {
+    | number[] | undefined
+    | string[] | undefined {
     if (view === "default") return this.megaList(m => m.keys(view));
     else return this.megaList(m => m.keys(view));
   }
 
-  megaList<T>(cb: (m: MarkdownDB) => Array<T> | undefined) {
+  megaList<T>(cb: (m: MarkdownDB) => T[] | undefined) {
     const makeIteratorArray =
-      <T>(cb: (m: MarkdownDB) => Array<T> | undefined) =>
+      <T>(cb: (m: MarkdownDB) => T[] | undefined) =>
         this.list!.map(cb)!.filter(notUndefined);
     return flat(makeIteratorArray(cb));
   }
 }
 
 type ToMarkdownMeta<T> = (val: T) => MarkdownMeta;
-export function metaview<K, T>(map: Map<K, Array<T>>, f: ToMarkdownMeta<T>) {
+export function metaview<K, T>(map: Map<K, T[]>, f: ToMarkdownMeta<T>) {
   const array = Array.from(map)
     .map(e => {
       const [k, v] = e;
       const v1 = v.map(f);
-      return [k, v1] as [K, Array<Markdown>];
+      return [k, v1] as [K, Markdown[]];
     });
   return new Map(array);
 }
@@ -190,7 +192,7 @@ async function fetchStatic(publicUrl: string, url: string, id: number): Promise<
   return data;
 }
 
-function resolveMetaArray_(metas: Array<MarkdownMeta>): Array<Markdown> {
+function resolveMetaArray_(metas: MarkdownMeta[]): Markdown[] {
   return metas.map(e => resolveMeta_(e));
 }
 
@@ -212,11 +214,11 @@ function resolveMeta_(meta: MarkdownMeta): Markdown {
   }
 }
 
-function forwardIter<T>(iter?: IterableIterator<T>): Array<T> | undefined;
-function forwardIter<T, U>(iter: IterableIterator<T> | undefined, cb: ((v: T) => U)): Array<U> | undefined;
+function forwardIter<T>(iter?: IterableIterator<T>): T[] | undefined;
+function forwardIter<T, U>(iter: IterableIterator<T> | undefined, cb: ((v: T) => U)): U[] | undefined;
 function forwardIter<T, U>(iter?: IterableIterator<T>, cb?: ((v: T) => U)):
-  | Array<U>
-  | Array<T>
+  | U[]
+  | T[]
   | undefined {
   if (iter === undefined) return undefined;
   if (cb === undefined) {
