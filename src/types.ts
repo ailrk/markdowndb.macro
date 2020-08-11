@@ -16,6 +16,20 @@ export interface MarkdownHeader {
   readonly id: number,
 };
 
+export interface MarkdownDBConfig {
+  // The directory where markdown stores.
+  markdownDir: string,
+
+  // The build mode.
+  mode: MarkdownDBMode,
+
+  // Where static files will be host.
+  publicURL?: string,
+
+  // Logging level
+  logLevel?: LogLevel,
+};
+
 export type MarkdownText = string;
 
 export type MarkdownMetaContent =
@@ -55,6 +69,12 @@ export type ViewType =
   | "tag"
   | "time"
   | "default"
+  ;
+
+export type LogLevel =
+  | 'info'
+  | 'warning'
+  | 'error'
   ;
 
 export interface MarkdownDB {

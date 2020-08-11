@@ -1,8 +1,9 @@
 import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as Builder from './builder/builder';
-import {MarkdownDBMode, MarkdownDB} from './types';
+import {MarkdownDBMode, MarkdownDB, MarkdownDBConfig} from './types';
 import {log} from './log/logger';
+import {makeConfig} from './config';
 
 export type CreateMarkdownDBFn = (dir: string, mode: MarkdownDBMode, publicURL?: string) => MarkdownDB;
 export default createMacro(markdowndbMacros);
@@ -29,20 +30,10 @@ const requiremarkdowndb = ({referencePath, state, babel}:
   }
 
   const args = callExpressionPath.get("arguments") as NodePath<Node>[]
-  const markdownDir: string | undefined = args[0]?.evaluate()?.value;
-  const mode: MarkdownDBMode = args[1]?.evaluate()?.value ?? "runtime";
-  const publicURL: string | undefined = args[2]?.evaluate()?.value;
+  const config: MarkdownDBConfig = args[0]?.evaluate()?.value;
+  const {markdownDir, mode, publicURL} = makeConfig(config);
 
-  {
-    // sanity check
-    if (markdownDir === undefined) {
-      throw new Error(`There is a problem evaluating the argument `
-        + `${callExpressionPath.getSource()}.`
-        + ` Please make sure the value is known at compile time`);
-    }
-  }
-
-  log(">> build start >>");
+  log(">- build start -<");
   const content = Builder.build(markdownDir, mode, publicURL)
   log("** build finished **");
   referencePath.parentPath.replaceWith(t.expressionStatement(content));
