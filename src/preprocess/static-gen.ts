@@ -5,6 +5,7 @@ import {execSync, ExecException} from 'child_process';
 import approotpath from 'app-root-path';
 import commandExists from 'command-exists';
 import {notUndefined} from '../utils/type';
+import {logThrow, log} from '../log/logger';
 import * as Parse from './parse';
 
 export interface ToPublic {
@@ -16,14 +17,24 @@ export interface ToPublic {
 export function toPublic(props: {pubDir: string, url: string}) {
   const {pubDir, url} = props;
   const fullPublicUrl = pubDirURL(pubDir, url);
+
+  log(`Creating static markdown array, public directory: ${fullPublicUrl}`);
+
   if (!fs.existsSync(fullPublicUrl)) {
+    log(`${fullPublicUrl} does not exists, will create a new one`);
     fs.mkdirSync(fullPublicUrl);
     return topublic.toPublicBasic({fullPublicUrl, url});
   };
 
-  return (git.gitCheck() ?
-    topublic.toPublicGitDiff :
-    topublic.toPublicBasic)({fullPublicUrl, url});
+  return (() => {
+    if (git.gitCheck()) {
+      log(`Git is available, do incremental build`);
+      return topublic.toPublicGitDiff;
+    } else {
+      log(`Git is not available. will rebuild all articles`);
+      return topublic.toPublicBasic;
+    }
+  })()({fullPublicUrl, url});
 }
 
 // create new folder /<pubDir>/<url>/. For each markdown create a corresponding file
@@ -61,10 +72,12 @@ namespace topublic {
       return diffList;
 
     } catch (err) {
-      console.log('incremental build failed, ' +
-        'failed to invoke git diff --filename-only\n' +
-        `error msg: ${err}\n` +
-        'fall back to normal build (this will rebuild all markdown files)');
+      logThrow(
+        'incremental build failed, '
+        + 'failed to invoke git diff --filename-only '
+        + `error msg: ${err} `
+        + 'fall back to normal build (this will rebuild all markdown files)'
+        , 'error');
       return fallback(props);
     }
   };

@@ -2,6 +2,7 @@ import {createMacro, MacroParams} from 'babel-plugin-macros';
 import {NodePath, Node} from '@babel/core';
 import * as Builder from './builder/builder';
 import {MarkdownDBMode, MarkdownDB} from './types';
+import {log} from './log/logger';
 
 export type CreateMarkdownDBFn = (dir: string, mode: MarkdownDBMode, publicURL?: string) => MarkdownDB;
 export default createMacro(markdowndbMacros);
@@ -41,6 +42,8 @@ const requiremarkdowndb = ({referencePath, state, babel}:
     }
   }
 
+  log(">> build start >>");
   const content = Builder.build(markdownDir, mode, publicURL)
+  log("** build finished **");
   referencePath.parentPath.replaceWith(t.expressionStatement(content));
 };

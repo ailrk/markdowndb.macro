@@ -5,9 +5,11 @@ import MardownIt from 'markdown-it';
 import * as HLJS from 'highlightjs';
 import {fnv1a} from '../utils/hash';
 import {MarkdownRaw} from '../types';
+import {logThrow, log} from '../log/logger';
 
 export function makeMarkdownArray(dirname: string): MarkdownRaw[] {
 
+  log(`Creating markdown array from directory ${dirname}`);
   const parse = (n: string) => {
     const filename = path.resolve(dirname, n);
     const rawtxt = fs.readFileSync(filename, {encoding: "utf8"});
@@ -27,10 +29,9 @@ export function makeMarkdownArray(dirname: string): MarkdownRaw[] {
 
 export function parseMarkdown(props: {filename: string, rawtxt: string}): MarkdownRaw {
   const {filename, rawtxt} = props;
-  const txt = rawtxt.split(/;;[\s]+/);
+  const txt = rawtxt.split(/;;[\s]/);
 
   const headers = txt[0].split("-- ").filter(e => e !== '');
-  console.log(txt);
   const content = mdToHtml(txt[1]);
 
   let tag: string[] | undefined;
@@ -56,7 +57,9 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
         try {
           time = new Date(tokens[1]);
         } catch (err) {
-          throw new Error(`date ${tokens[1]} format is not correct. from file ${filename}`);
+          logThrow(
+            `date ${tokens[1]} format is not correct. from file ${filename}`,
+            'error');
         }
         break
       case "title":
@@ -68,11 +71,16 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
             title = parsed?.pop() ?? "untitled";
           }
         } catch (err) {
-          throw Error(`title of ${path.basename(filename)} is unavaiable`);
+          logThrow(
+            `title of ${path.basename(filename)} is unavaiable`,
+            'error');
         }
         break
       default:
-        throw Error(`Incorrect markdown header format. from file ${filename}. get token ${tokens[0]}`);
+        logThrow(
+          `Incorrect markdown header format. from file ${filename}. `
+          + `get token ${tokens[0]}`,
+          'error')
     }
   }
   return {
@@ -97,18 +105,21 @@ function mdToHtml(md: string): string {
       if (lang && HLJS.getLanguage(lang)) {
         try {
           return HLJS.highlight(lang, str).value;
-        } catch (_) {}
+        } catch (_) {
+          log(`Failed when trying to highlight ${lang}`, 'warning');
+        }
       }
       return str;
     }
   });
-  console.log(md);
   return rmd.render(md);
 }
 
 function checkDuplicate(markdowns: MarkdownRaw[], dirname: string) {
   const dups = markdowns.filter((m, idx) => markdowns.indexOf(m) !== idx);
   if (dups.length !== 0)
-    throw new Error(`Some article titles collide in their hash. please change title` +
-      ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`);
+    logThrow(
+      `Some article titles collide in their hash. please change title`
+      + ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`
+      , 'error');
 }
