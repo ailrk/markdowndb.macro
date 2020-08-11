@@ -18,6 +18,7 @@ import {
 // 3. mmap = MarkdownRuntimeDatabase(a, {time: a, tag: b});
 // 4. return mmap
 export function buildMarkdownDBAST(markdowns: MarkdownRaw[]) {
+  console.log("build ast");
   const t = babelcore.types;
   const defaultMap = assignBuilder('defaultMap', markdownMapBuilder(markdowns));
   const tagIndex = assignBuilder('tagIndex', t.newExpression(t.identifier('Map'), []));

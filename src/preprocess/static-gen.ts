@@ -1,12 +1,11 @@
 import {MarkdownRaw} from '../types';
 import path from 'path';
 import fs from 'fs';
-import {exec, ExecException} from 'child_process';
+import {execSync, ExecException} from 'child_process';
 import approotpath from 'app-root-path';
-import {commandExists} from '../utils/command-exists';
-import {notUndefined, ParameterMap} from '../utils/type';
+import commandExists from 'command-exists';
+import {notUndefined} from '../utils/type';
 import * as Parse from './parse';
-import {promisify} from 'util';
 
 export interface ToPublic {
   (props: {pubDir: string, url: string}): void
@@ -14,11 +13,11 @@ export interface ToPublic {
 
 // `url` is where raw markdown files resides.
 // `fullPublicUrl` is where compiled html will be hosted.
-export async function toPublic(props: {pubDir: string, url: string}) {
+export function toPublic(props: {pubDir: string, url: string}) {
   const {pubDir, url} = props;
   const fullPublicUrl = pubDirURL(pubDir, url);
-  if (!await promisify(fs.exists)(fullPublicUrl)) {
-    promisify(fs.mkdir)(fullPublicUrl);
+  if (!fs.existsSync(fullPublicUrl)) {
+    fs.mkdirSync(fullPublicUrl);
     return topublic.toPublicBasic({fullPublicUrl, url});
   };
 
@@ -30,9 +29,9 @@ export async function toPublic(props: {pubDir: string, url: string}) {
 // create new folder /<pubDir>/<url>/. For each markdown create a corresponding file
 // in the new foler with the markdown's id as  the filename, markdown's text content as content.
 namespace topublic {
-  export async function toPublicBasic(props: {fullPublicUrl: string, url: string}) {
+  export function toPublicBasic(props: {fullPublicUrl: string, url: string}) {
     const {fullPublicUrl, url} = props;
-    const markdowns = await Parse.makeMarkdownDB(path.resolve(url));
+    const markdowns = Parse.makeMarkdownArray(path.resolve(url));
 
     fs.readdirSync(fullPublicUrl)
       .forEach(filename => {
@@ -41,34 +40,33 @@ namespace topublic {
 
     markdowns.forEach(({header, content}: MarkdownRaw) => {
       const p = htmlPath(fullPublicUrl, header.id.toString());
-      promisify(fs.writeFile)(p, content);
+      fs.writeFileSync(p, content);
     });
     return markdowns;
   }
 
-  export async function toPublicGitDiff(props: {fullPublicUrl: string, url: string}) {
+  export function toPublicGitDiff(props: {fullPublicUrl: string, url: string}) {
     const {fullPublicUrl, url} = props;
-    const {err, stdout, stderr} = await git.gitRun();
+    try {
+      const stdout = git.gitRun();
 
-    if (err) {
+      // list of changed markdown files.
+      const diffList = git.getDiffList(url, stdout);
+      if (diffList === undefined) {return fallback(props)};
+
+      diffList.forEach(({header, content}) => {
+        const p = htmlPath(fullPublicUrl, header.id.toString());
+        fs.mkdirSync(p, content);
+      });
+      return diffList;
+
+    } catch (err) {
       console.log('incremental build failed, ' +
         'failed to invoke git diff --filename-only\n' +
         `error msg: ${err}\n` +
-        `stderr: ${stderr}\n` +
         'fall back to normal build (this will rebuild all markdown files)');
       return fallback(props);
     }
-
-
-    // list of changed markdown files.
-    const diffList = await git.getDiffList(url, stdout);
-    if (diffList === undefined) {return fallback(props)};
-
-    diffList.forEach(({header, content}) => {
-      const p = htmlPath(fullPublicUrl, header.id.toString());
-      fs.mkdirSync(p, content);
-    });
-    return diffList;
   };
 
   function del(fullPublicUrl: string, filename: string) {
@@ -79,39 +77,33 @@ namespace topublic {
 }
 
 namespace git {
-  export async function gitRun() {
-    type RParam = ParameterMap<'err' | 'stdout' | 'stderr',
-      Parameters<NonNullable<Parameters<typeof exec>[2]>>>
-
-    return new Promise((resolve: ((e: RParam) => void)) => {
-      exec('git diff --name-only', (err, stdout, stderr) => {
-        resolve({err, stdout, stderr});
-      });
-    })
+  export function gitRun() {
+    return execSync('git diff --name-only').toString();
   }
 
-  export async function getDiffList(url: string, stdout: | string | Buffer | ExecException | null) {
+  export function getDiffList(url: string, stdout: | string | Buffer | ExecException | null) {
     const splitPath = (rawPath: string) => {
       const [folder, markdownfile] = rawPath.split('/');
       if (folder === url) return path.resolve(markdownfile);
     }
     if (stdout === null) return undefined;
+
     const diffList = stdout.toString()
       .trim()
       .split("\n")
       .map(splitPath)
       .filter(notUndefined)
-      .filter(fs.existsSync)
-      .map(async filename => Parse.parseMarkdown({
+      .filter(filename => fs.existsSync(filename))
+      .map(filename => Parse.parseMarkdown({
         filename,
-        rawtxt: (await (promisify(fs.readFile)(filename, {encoding: 'utf8'})))
+        rawtxt: fs.readFileSync(filename, {encoding: 'utf8'})
       }))
       .filter(notUndefined)
 
-    return await Promise.all(diffList) ?? undefined;
+    return diffList;
   }
 
-  export async function gitCheck() {
+  export function gitCheck() {
     return gitExist() && hasDotGit();
   }
 
@@ -119,12 +111,12 @@ namespace git {
     return path.join(approotpath.path, '.git');
   }
 
-  async function gitExist() {
-    return promisify(commandExists)('git');
+  function gitExist() {
+    return commandExists.sync('git')
   }
 
   async function hasDotGit() {
-    return promisify(fs.exists)(gitPath());
+    return fs.existsSync(gitPath());
   }
 }
 

@@ -5,37 +5,32 @@ import MardownIt from 'markdown-it';
 import * as HLJS from 'highlightjs';
 import {fnv1a} from '../utils/hash';
 import {MarkdownRaw} from '../types';
-import {promisify} from 'util';
 
-// parse the whole directory.
-export async function makeMarkdownDB(dirname: string): Promise<MarkdownRaw[]> {
-  const dir = (await promisify(fs.readdir)(dirname));
-  const readfile_ = promisify(fs.readFile);
-  const promises = dir
-    .map(filename => path.resolve(dirname, filename))
-    .map(async filename => parseMarkdown({
-      filename,
-      rawtxt: (await readfile_(filename, {encoding: "utf8"}))
-    }));
+export function makeMarkdownArray(dirname: string): MarkdownRaw[] {
 
-  const markdowns = await Promise.all(promises);
-  {
-    // check duplication.
-    const dups = checkdup(markdowns);
-    if (dups.length !== 0) {
-      throw new Error(`Some article titles collide in their hash. please change title` +
-        ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`);
-    }
+  const parse = (n: string) => {
+    const filename = path.resolve(dirname, n);
+    const rawtxt = fs.readFileSync(filename, {encoding: "utf8"});
+    return parseMarkdown({filename, rawtxt});
+  };
+
+  const dir = fs.readdirSync(dirname);
+  const markdowns = dir.map(parse);
+
+  try {
+    checkDuplicate(markdowns, dirname);
+    return markdowns;
+  } catch (error) {
+    throw error;
   }
-
-  return markdowns;
 }
 
 export function parseMarkdown(props: {filename: string, rawtxt: string}): MarkdownRaw {
   const {filename, rawtxt} = props;
-  const txt = rawtxt.split(';;');
+  const txt = rawtxt.split(/;;[\s]+/);
 
   const headers = txt[0].split("-- ").filter(e => e !== '');
+  console.log(txt);
   const content = mdToHtml(txt[1]);
 
   let tag: string[] | undefined;
@@ -107,9 +102,13 @@ function mdToHtml(md: string): string {
       return str;
     }
   });
+  console.log(md);
   return rmd.render(md);
 }
 
-function checkdup(markdowns: MarkdownRaw[]) {
-  return markdowns.filter((m, idx) => markdowns.indexOf(m) !== idx);
+function checkDuplicate(markdowns: MarkdownRaw[], dirname: string) {
+  const dups = markdowns.filter((m, idx) => markdowns.indexOf(m) !== idx);
+  if (dups.length !== 0)
+    throw new Error(`Some article titles collide in their hash. please change title` +
+      ` of these articles [${dups.map(m => m.header)}] under directory ${dirname}`);
 }

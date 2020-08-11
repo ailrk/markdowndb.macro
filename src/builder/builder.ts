@@ -6,14 +6,14 @@ import * as Parse from '../preprocess/parse';
 import * as StaticGen from '../preprocess/static-gen';
 
 // dispatch markdown build mode.
-export async function build(mdpath: string, mode: MarkdownDBMode, publicUrl?: string) {
+export function build(mdpath: string, mode: MarkdownDBMode, publicUrl?: string) {
   switch (mode) {
     case "runtime": {
-      const markdownarray = await Parse.makeMarkdownDB(path.resolve(mdpath));
+      const markdownarray = Parse.makeMarkdownArray(path.resolve(mdpath));
       return RuntimeBuilder.buildMarkdownDBAST(markdownarray);
     }
     case "static": {
-      const markdownarray = await StaticGen.toPublic({
+      const markdownarray = StaticGen.toPublic({
         pubDir: "public", url: mdpath
       });
       return StaticBuilder.buildMarkdownDBAST(mdpath, markdownarray, publicUrl ?? "/");
