@@ -75,6 +75,7 @@ export type LogLevel =
   | 'info'
   | 'warning'
   | 'error'
+  | 'silence'
   ;
 
 export interface MarkdownDB {
