@@ -16,6 +16,7 @@ export interface MarkdownHeader {
   readonly id: number,
 };
 
+
 export interface MarkdownDBConfig {
   // The directory where markdown stores.
   markdownDir: string,
@@ -28,9 +29,14 @@ export interface MarkdownDBConfig {
 
   // Logging level
   logLevel?: LogLevel,
+
+  // Log Dir
+  logDir?: string,
 };
 
+
 export type MarkdownText = string;
+
 
 export type MarkdownMetaContent =
   | Promise<MarkdownText>
@@ -49,6 +55,7 @@ export interface MarkdownRaw {
   readonly content: MarkdownText,
 }
 
+
 // this is the type used internally for MarkdownDB
 // because you want to evaluate static mode DB lazyily.
 export type MarkdownMeta =
@@ -56,12 +63,14 @@ export type MarkdownMeta =
   & {content: MarkdownMetaContent}
   ;
 
+
 // Markdown is the what exposed to the user.
 // Different from `MarkdownRaw`, it holds a promise of MarkdownText.
 export type Markdown =
   Pick<MarkdownRaw, "header">
   & {content: Promise<MarkdownText>}
   ;
+
 
 // Indicate different view of markdown. When using MarkdownDB, pass this token
 // to select overloaded method.
@@ -71,12 +80,14 @@ export type ViewType =
   | "default"
   ;
 
+
 export type LogLevel =
   | 'info'
   | 'warning'
   | 'error'
   | 'silence'
   ;
+
 
 export interface MarkdownDB {
   // get by id
@@ -93,6 +104,7 @@ export interface MarkdownDB {
   keys(view: "default"): number[] | undefined,
   keys(view: "time" | "tag"): string[] | undefined,
 }
+
 
 // iterator version.Less memory overhead.
 export interface MarkdownDBIter {

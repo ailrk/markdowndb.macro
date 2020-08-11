@@ -32,7 +32,7 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
   const txt = rawtxt.split(/;;[\s]/);
 
   const headers = txt[0].split("-- ").filter(e => e !== '');
-  const content = mdToHtml(txt[1]);
+  const content = renderMarkdown(txt[1]);
 
   let tag: string[] | undefined;
   let source: string[] | undefined;
@@ -96,7 +96,7 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
   };
 }
 
-function mdToHtml(md: string): string {
+function renderMarkdown(md: string): string {
   const rmd = new MardownIt({
     html: false,
     breaks: true,

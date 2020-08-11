@@ -11,4 +11,5 @@ export {
   MarkdownHeader,
   MarkdownDB,
   MarkdownDBMode,
+  MarkdownDBConfig,
 } from './types';

@@ -19,10 +19,9 @@ export function toPublic(props: {pubDir: string, url: string}) {
   if (!fs.existsSync(fullPublicUrl)) {
     log(`${fullPublicUrl} does not exists, will create a new one`);
     fs.mkdirSync(fullPublicUrl);
-    return topublic.toPublicBasic({fullPublicUrl, url});
   };
 
-  return topublic.toPublicBasic;
+  return topublic.toPublicBasic({fullPublicUrl, url});
 }
 
 // create new folder /<pubDir>/<url>/. For each markdown create a corresponding file

@@ -8,13 +8,14 @@ export const makeConfig: MakeConfigFn = (
     markdownDir,
     mode,
     publicURL,
-    logLevel
+    logLevel,
+    logDir,
   }: MarkdownDBConfig) => {
 
   if (logLevel === undefined) {
-    setLoggerOnce("info");
+    setLoggerOnce("info", logDir);
   } else {
-    setLoggerOnce(logLevel);
+    setLoggerOnce(logLevel, logDir);
   }
 
   if (markdownDir === undefined) {

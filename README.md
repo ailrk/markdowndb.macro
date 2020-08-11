@@ -41,9 +41,11 @@ If you have multiple folders to host, you might want a single unified interface 
 ##### Demo
 Assume you have this directory hierachy:
 ```
-articles/
+foler1/
   | markdown1.md
   | markdown2.md
+foler2/
+  | markdown3.md
 src/
 ```
 where `articles` is where you put all your markdowns.
@@ -59,11 +61,22 @@ import {
   AllDB,
 } from 'markdowndb.macro/dist/markdown-map';
 
-import markdowndb, { Markdown } from 'markdowndb.macro';
+import markdowndb, { Markdown, MarkdownDBConfig } from 'markdowndb.macro';
 
 // create dbs in different modes.
-const mdruntime: MarkdownDB = markdowndb('folder1', 'runtime');
-const mdstatic: MarkdownDB = markdowndb('foler2', 'static', '/home');
+// note because it is a macro, you must pass the Config type as object literal.
+const mdruntime: MarkdownDB = markdowndb({
+  markdownDir: 'folder1',
+  mdoe: 'runtime',
+  logLevel: 'silence'  // compile time log for diagnoses. Set silence to turn off.
+  });
+
+const mdstatic: MarkdownDB = markdowndb({
+  markdownDir: 'foler2',
+  mdoe: 'static',
+  publicURL: '/home',
+});
+
 const all: MarkdownDB = new AllDB([
     mdruntime,
     mdstatic,
@@ -119,6 +132,33 @@ export interface Markdown {
   readonly content: Promise<MarkdownText>,
 }
 
+// aviable log level.
+// it's for compile time diagnoses only.
+// if the log level is set to 'silence' no log file will be generate.
+export type LogLevel =
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'silence'
+  ;
+
+export interface MarkdownDBConfig {
+  // The directory where markdown stores.
+  markdownDir: string,
+
+  // The build mode.
+  mode: MarkdownDBMode,
+
+  // Where static files will be host.
+  publicURL?: string,
+
+  // Logging level
+  logLevel?: LogLevel,
+
+  // Log Dir
+  logDir?: string,
+};
+
 // Both MarkdownRuntimeDatabase and MarkdownStaticDatabase implement this interface.
 export interface MarkdownDB {
   // get by id
@@ -144,4 +184,4 @@ id is a 32 digit fnv1a hash on the title. It has very good randomness but collis
 * [x] extraction source and tag at build time.
 * [x] build time fast index table. make tag indexing faster.
 * [x] serve static file from public
-* [x] support incremental build (without rebuild everything all together)
+* [ ] support incremental build (without rebuild everything all together)
