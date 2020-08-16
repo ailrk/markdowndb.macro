@@ -1,3 +1,4 @@
+import type {LazyPromise} from 'promise-by-need';
 // Structure of the markdown header.
 export interface MarkdownHeader {
   // title of the markdown
@@ -40,7 +41,7 @@ export type MarkdownText = string;
 
 export type MarkdownMetaContent =
   | Promise<MarkdownText>
-  | (() => Promise<MarkdownText>)
+  | LazyPromise<MarkdownText>
   ;
 
 // primitive Markdown type, only exist at compile time.

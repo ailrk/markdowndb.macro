@@ -4,6 +4,7 @@ import {MarkdownRaw, Markdown, MarkdownHeader, MarkdownDB, ViewType, MarkdownTex
 import {htmlPath} from './preprocess/static-gen';
 import {flat} from './utils/flat';
 import {notUndefined} from './utils/type';
+import {LazyPromise} from 'promise-by-need';
 
 export class MarkdownDatabase implements MarkdownDB {
   // different views of Markdowns, all constructed at compile time.
@@ -100,12 +101,14 @@ export class MarkdownStaticDatabase extends MarkdownDatabase {
     indices: Record<ViewType, Map<string, MarkdownHeader[]>>) {
     super();
     const {url, publicUrl, map} = other;
-    const f: ToMarkdownMeta<MarkdownHeader> = header => (
-      {
-        header,
-        content: () => fetchStatic(publicUrl, url, header.id),
-      }
-    );
+    const f: ToMarkdownMeta<MarkdownHeader> = header => {
+      return (
+        {
+          header,
+          content: LazyPromise.from(() => fetchStatic(publicUrl, url, header.id)),
+        }
+      );
+    };
     this.defaultMap = new Map(
       Array.from(map)
         .map(e => {
@@ -204,13 +207,7 @@ function resolveMeta_(meta: MarkdownMeta): Markdown {
   const {header, content} = meta;
   return {
     header,
-    content: (() => {
-      if (typeof content === "function") {
-        return content();
-      } else {
-        return content;
-      }
-    })(),
+    content,
   }
 }
 

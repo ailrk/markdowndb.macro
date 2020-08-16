@@ -5,3 +5,10 @@ export function once<T>(fn: ((...args: any[]) => T) | null, ...args: any[]) {
     return result;
   }
 }
+
+export interface Lazy<T> {
+  (): T,
+  isLazy: boolean,
+};
+
+

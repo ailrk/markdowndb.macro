@@ -4,7 +4,11 @@ import createMarkdownDB from '../dist/macro';
 import 'regenerator-runtime';
 
 it("Basic runtime promise test", async () => {
-  const md: MarkdownRuntimeDatabase = createMarkdownDB('markdown', 'runtime');
+  const md: MarkdownRuntimeDatabase = createMarkdownDB({
+    markdownDir: 'markdown',
+    mode: 'runtime',
+    logLevel: 'silence',
+  });
 
   const list = await Promise.all(Array.from(md.values("default"))
       .map(m => m.content));
