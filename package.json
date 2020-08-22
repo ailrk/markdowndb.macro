@@ -1,6 +1,6 @@
 {
   "name": "markdowndb.macro",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": " compile time markdown database for static blogs",
   "main": "dist/index.js",
   "type": "dist/index.d.ts",
@@ -44,7 +44,7 @@
     "highlightjs": "^9.16.2",
     "markdown-it": "^11.0.0",
     "markdown-it-math": "^4.1.1",
-    "promise-by-need": "^0.0.6",
+    "promise-by-need": "^1.0.1",
     "texzilla": "^1.0.2"
   }
 }
