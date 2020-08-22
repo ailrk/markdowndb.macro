@@ -44,7 +44,7 @@
     "highlightjs": "^9.16.2",
     "markdown-it": "^11.0.0",
     "markdown-it-math": "^4.1.1",
-    "promise-by-need": "0.0.5",
+    "promise-by-need": "^0.0.6",
     "texzilla": "^1.0.2"
   }
 }

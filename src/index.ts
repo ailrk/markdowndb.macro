@@ -3,6 +3,7 @@ export {
   MarkdownDatabase,
   MarkdownStaticDatabase,
   MarkdownRuntimeDatabase,
+  AllDB,
 } from './markdown-map';
 export {
   ViewType,

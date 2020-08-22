@@ -1,7 +1,10 @@
 # markdowndb.macro
 
+
 ### What it does
 A babel macro for building markdown Map at compile time for static website.
+
+A working example is [my github page](https://github.com/ailrk/home/blob/master/src/state/markdowns.ts).
 
 ### Motivation
 I want a static website that holds all my markdown articles, but to do that usually I need some extra config for webpack and make my already chaotic project config even more complicated. With `babel-plugin-macros` I can have an Map-like interface to access all markdowns with one function call.
