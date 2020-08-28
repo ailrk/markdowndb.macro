@@ -30,6 +30,9 @@ export function makeMarkdownArray(dirname: string): MarkdownRaw[] {
 export function parseMarkdown(props: {filename: string, rawtxt: string}): MarkdownRaw {
   const {filename, rawtxt} = props;
   const txt = rawtxt.split(/;;[\s]/);
+  if (txt.length !== 2) {
+    throw new Error("Make sure your header and content is separated with ;;");
+  }
 
   const headers = txt[0].split("-- ").filter(e => e !== '');
   const content = renderMarkdown(txt[1]);
