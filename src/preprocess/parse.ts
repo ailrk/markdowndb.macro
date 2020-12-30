@@ -101,7 +101,7 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
 
 function renderMarkdown(md: string): string {
   const rmd = new MardownIt({
-    html: false,
+    html: true,
     breaks: true,
     linkify: true,
     highlight: (str: string, lang: string) => {
