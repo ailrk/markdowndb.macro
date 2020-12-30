@@ -1,6 +1,6 @@
 {
   "name": "markdowndb.macro",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "description": " compile time markdown database for static blogs",
   "main": "dist/index.js",
   "type": "dist/index.d.ts",
