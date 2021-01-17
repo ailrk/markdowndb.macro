@@ -12,7 +12,8 @@ namespace Log {
   export let logDir = process.cwd();
 
   export function log(record: string, level: Exclude<LogLevel, 'silence'> = 'info') {
-    if (!enabledLevels.has(level)) return;
+    if (!enabledLevels.has(level) || enabledLevels.size == 0) return;
+
     const logfile = path.join(
       logDir,
       `markdowndb.macro-${sessionId}.log`);
