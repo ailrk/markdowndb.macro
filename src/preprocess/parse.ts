@@ -31,7 +31,7 @@ export function parseMarkdown(props: {filename: string, rawtxt: string}): Markdo
   const {filename, rawtxt} = props;
   const txt = rawtxt.split(/;;[\s]/);
   if (txt.length !== 2) {
-    throw new Error("Make sure your header and content is separated with ;;");
+    throw new Error(`Parse error in file ${filename} Make sure your header and content is separated with ;;`);
   }
 
   const headers = txt[0].split("-- ").filter(e => e !== '');

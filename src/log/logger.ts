@@ -6,7 +6,7 @@ import {once} from '../utils/functools';
 
 namespace Log {
 
-  const sessionId = fnv1a(new Date().toJSON());
+  // const sessionId = fnv1a(new Date().toJSON());
   export let level: LogLevel = 'info';
   export let enabledLevels = new Set(['info', 'warning', 'error']);
   export let logDir = process.cwd();
@@ -16,7 +16,7 @@ namespace Log {
 
     const logfile = path.join(
       logDir,
-      `markdowndb.macro-${sessionId}.log`);
+      `markdowndb.macro.log`);
     fs.appendFileSync(logfile,
       `${level} -- ${new Date().toLocaleString()} - ${record}\n`
     );
